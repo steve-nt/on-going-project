@@ -1,0 +1,892 @@
+================================================================================
+                    FORUM APPLICATION - DATA FLOW REPORT
+================================================================================
+
+PROJECT OVERVIEW
+================================================================================
+This is a forum application built with:
+- Backend: Go using Clean Architecture principles
+- Database: SQLite with prepared statements
+- Frontend: HTML templates with CSS/JS
+- Authentication: Session-based with bcrypt password hashing
+
+Total Files Analyzed: 71 files
+- Go source files: 61
+- Frontend files: 8 (HTML/CSS/JS)
+- Data files: 2 (JSON)
+
+
+ARCHITECTURE LAYERS
+================================================================================
+
+1. DOMAIN LAYER (Pure Business Logic)
+   - internal/domain/user/user.go
+   - internal/domain/user/topic.go
+   - internal/domain/user/repository.go (interface)
+   - internal/domain/comments/comments.go
+   - internal/domain/session/session.go
+   - internal/domain/session/sessionManager.go (interface)
+
+2. APPLICATION LAYER (Use Cases)
+   - internal/app/services.go
+   - internal/app/user/queries/*
+   - internal/app/topics/queries/*
+   - internal/app/topics/commands/*
+   - internal/app/health/queries/*
+
+3. INFRASTRUCTURE LAYER (External Interfaces)
+   - internal/infra/http/server.go
+   - internal/infra/http/*/handlers
+   - internal/infra/storage/sqlite/*
+   - internal/infra/storage/sessionstore/*
+   - internal/infra/middleware/*
+   - internal/infra/logger/*
+
+4. ENTRY POINTS
+   - cmd/server/main.go (Backend API server)
+   - cmd/client/main.go (Frontend static file server)
+
+
+MAIN DATA FLOW PATTERNS
+================================================================================
+
+PATTERN 1: USER REGISTRATION FLOW
+================================================================================
+1. Browser → POST /api/v1/register
+   Data: {username, email, password}
+
+2. HTTP Request → internal/infra/http/user/register/registerhandler.go
+   - Validates HTTP method (POST)
+   - Parses JSON body using internal/pkg/helpers/body_request.go
+
+3. Handler → internal/pkg/validator/validator.go
+   - ValidateUserRegistration (username: 3-50 chars, email format, password: 8-72 chars)
+   - If validation fails → 400 Bad Request
+
+4. Handler → internal/app/user/queries/userRegister.go
+   Data: {Name, Email, Password}
+
+5. UserRegisterRequestHandler:
+   a) Calls internal/pkg/uuid/uuid.go → Generates UUID for user ID
+   b) Calls internal/pkg/helpers/emailValidation.go → Validates email format
+   c) Calls internal/pkg/bcrypt/encryption.go → Hashes password (cost: 12)
+   d) Creates user.User entity
+
+6. Handler → internal/domain/user/repository.go (interface)
+   Method: UserRegister(ctx, *User)
+
+7. Repository → internal/infra/storage/sqlite/repo.go
+   SQL: INSERT INTO users (id, username, email, password_hash, created_at)
+   Database: SQLite (forum.db)
+
+8. If duplicate username/email → internal/infra/storage/sqlite/errors.go
+   Maps SQLite constraint error → ErrDuplicateEmail or ErrDuplicateUsername
+
+9. Success → HTTP 201 Created
+   Response: {userId, message: "User registered successfully"}
+
+
+PATTERN 2: USER LOGIN FLOW (USERNAME)
+================================================================================
+1. Browser → POST /api/v1/login/username
+   Data: {username, password}
+
+2. HTTP Request → internal/infra/http/user/login/loginUsernameHandler.go
+   - Validates HTTP method (POST)
+   - Parses and validates credentials
+
+3. Handler → internal/app/user/queries/userLoginUsername.go
+   Data: {Username, Password}
+
+4. UserLoginUsernameRequestHandler:
+   a) Calls repository.GetUserByUsername(ctx, username)
+   b) Repository → Database: SELECT * FROM users WHERE username = ?
+
+5. If user not found → internal/infra/storage/sqlite/errors.go
+   Returns: ErrUserNotFound → 404 Not Found
+
+6. If user found → internal/pkg/bcrypt/encryption.go
+   Compares database password hash with plaintext password
+   If mismatch → ErrPasswordMismatch → 401 Unauthorized
+
+7. Handler → internal/infra/storage/sessionstore/sessionManager.go
+   Method: CreateSession(ctx, userID)
+
+8. SessionManager:
+   a) Generates access token (UUID) with expiry (default: 24h)
+   b) Generates refresh token (UUID) with expiry (default: 7 days)
+   c) Inserts into database:
+      SQL: INSERT INTO sessions (token, user_id, expires_at, refresh_token, refresh_token_expires_at)
+
+9. Success → HTTP 200 OK
+   Response: {userId, username, accessToken, refreshToken}
+   Side Effect: Sets HTTP-only cookies with tokens
+
+
+PATTERN 3: AUTHENTICATION MIDDLEWARE FLOW
+================================================================================
+1. Browser sends request with cookies
+   Cookies: access_token, refresh_token
+
+2. Request → internal/infra/middleware/cors.go
+   - Adds CORS headers (Allow-Origin: *)
+   - Handles OPTIONS preflight
+
+3. Request → internal/infra/middleware/requireAuthorization.go
+   OR internal/infra/middleware/optionalAuthorization.go
+
+4. Middleware:
+   a) Extracts tokens from cookies using internal/infra/middleware/helpers.go
+   b) Calls sessionManager.GetSessionFromSessionTokens(accessToken, refreshToken)
+
+5. SessionManager → Database:
+   SQL: SELECT * FROM sessions WHERE token = ? AND refresh_token = ?
+
+6. Session found → Validate expiry:
+   - If access token NOT expired → User authenticated
+   - If access token expired BUT refresh token valid:
+     a) Delete old session
+     b) Create new session (generates new tokens)
+     c) Update response cookies
+   - If both expired → 401 Unauthorized
+
+7. SessionManager → Database (JOIN):
+   SQL: SELECT users.* FROM users
+        INNER JOIN sessions ON users.id = sessions.user_id
+        WHERE sessions.token = ?
+
+8. User retrieved → Added to request context
+   Context key: "user"
+
+9. Next handler → Extracts user from context:
+   internal/pkg/helpers/context.go → GetUserFromContext(ctx)
+
+
+PATTERN 4: TOPIC CREATION FLOW
+================================================================================
+1. Authenticated user → POST /api/v1/topics/create
+   Data: {title, content, imagePath, categoryId}
+   Cookies: access_token, refresh_token
+
+2. Request → Middleware chain:
+   CORS → RequireAuth → Handler
+
+3. Middleware adds user to context (see Pattern 3)
+
+4. Handler → internal/infra/http/topic/createTopic/createTopicHandler.go
+   - Validates HTTP method (POST)
+   - Extracts user from context
+   - Parses request body
+   - Validates: title (5-100 chars), content (10-1000 chars), imagePath (optional)
+
+5. Handler → internal/app/topics/commands/createTopic.go
+   Data: CreateTopicRequest {User, Title, Content, ImagePath, CategoryID}
+
+6. CreateTopicRequestHandler:
+   - Creates topic.Topic entity with user ID and timestamp
+
+7. Handler → Repository → Database:
+   SQL: INSERT INTO topics (id, user_id, category_id, title, content, image_path, created_at)
+
+8. Success → HTTP 201 Created
+   Response: {userId, message: "Topic created successfully"}
+
+
+PATTERN 5: TOPIC RETRIEVAL WITH COMMENTS FLOW
+================================================================================
+1. Browser → GET /api/v1/topics/get
+   Data: {topicId}
+
+2. Handler → internal/infra/http/topic/getTopic/getTopicHandler.go
+   - Validates HTTP method (GET)
+   - Parses topic ID
+
+3. Handler → internal/app/topics/queries/getTopic.go
+   Data: GetTopicRequest {TopicID}
+
+4. GetTopicRequestHandler → Repository → Database:
+   SQL: SELECT topics.*, users.username as owner_username
+        FROM topics
+        LEFT JOIN users ON topics.user_id = users.id
+        WHERE topics.id = ?
+
+5. Repository scans topic data
+
+6. Repository → Database (fetch comments):
+   SQL: SELECT comments.*, users.username
+        FROM comments
+        LEFT JOIN users ON comments.user_id = users.id
+        WHERE comments.topic_id = ?
+        ORDER BY comments.created_at DESC
+
+7. Repository aggregates comments into topic.Comments array
+
+8. If topic not found → internal/app/topics/queries/errors.go
+   Returns: ErrTopicNotFound → 404 Not Found
+
+9. Success → HTTP 200 OK
+   Response: {topicId, title, content, imagePath, userId, categoryId,
+             createdAt, updatedAt, comments: [{id, content, userId, username, createdAt}]}
+
+
+PATTERN 6: PAGINATED TOPICS RETRIEVAL FLOW
+================================================================================
+1. Browser → GET /api/v1/topics/all
+   Data: {page: 1, pageSize: 20, orderBy: "created_at", filter: ""}
+
+2. Handler → internal/infra/http/topic/getAllTopics/getAllTopicsHandler.go
+   - Validates HTTP method (GET)
+   - Parses pagination parameters
+
+3. Handler → internal/pkg/validator/validator.go
+   - ValidateGetAllTopics
+   - Validates: orderBy (whitelist: created_at, updated_at, title)
+   - Validates: page (positive int), pageSize (positive int, max 100)
+
+4. Handler → internal/app/topics/queries/getAllTopics.go
+   Data: GetAllTopicsRequest {OrderBy, Filter, Page, Size}
+
+5. GetAllTopicsRequestHandler:
+   a) Calls repository.GetAllTopics(ctx, page, size, orderBy, filter)
+   b) Calls repository.GetTotalTopicsCount(ctx, filter)
+
+6. Repository → Database (parallel queries):
+   Query 1: SELECT * FROM topics
+            WHERE title LIKE ? OR content LIKE ?
+            ORDER BY ? DESC
+            LIMIT ? OFFSET ?
+
+   Query 2: SELECT COUNT(*) FROM topics
+            WHERE title LIKE ? OR content LIKE ?
+
+7. Handler calculates pagination metadata:
+   - totalPages = ceil(totalCount / pageSize)
+   - nextPage = currentPage + 1 (if exists)
+   - prevPage = currentPage - 1 (if exists)
+
+8. Handler → internal/pkg/helpers/json_response.go
+   Wraps response with Info struct
+
+9. Success → HTTP 200 OK
+   Response: {
+     data: {topics: [...], totalCount, currentPage, pageSize},
+     info: {totalRecords, currentPage, pageSize, totalPages, nextPage, prevPage}
+   }
+
+
+PATTERN 7: TOPIC UPDATE FLOW
+================================================================================
+1. Authenticated user → PUT /api/v1/topics/update
+   Data: {topicId, title, content, imagePath, categoryId}
+   Cookies: access_token, refresh_token
+
+2. Request → Middleware: CORS → RequireAuth → Handler
+
+3. Handler → internal/infra/http/topic/updateTopic/updateTopicHandler.go
+   - Validates method, user auth, request data
+
+4. Handler → internal/app/topics/commands/updateTopic.go
+   Data: UpdateTopicRequest {User, TopicID, Title, Content, ImagePath, CategoryID}
+
+5. UpdateTopicRequestHandler → Repository → Database:
+   SQL: BEGIN TRANSACTION
+        UPDATE topics
+        SET title = ?, content = ?, image_path = ?, category_id = ?, updated_at = ?
+        WHERE id = ? AND user_id = ?
+        COMMIT TRANSACTION
+
+6. If user doesn't own topic → Update affects 0 rows → Error
+   Note: Authorization checked via user_id in WHERE clause
+
+7. Success → HTTP 200 OK
+   Response: {userId, message: "Topic updated successfully"}
+
+
+PATTERN 8: TOPIC DELETION FLOW
+================================================================================
+1. Authenticated user → DELETE /api/v1/topics/delete
+   Data: {topicId}
+   Cookies: access_token, refresh_token
+
+2. Request → Middleware: CORS → RequireAuth → Handler
+
+3. Handler → internal/infra/http/topic/deleteTopic/deleteTopicHandler.go
+   - Validates method, user auth, request data
+
+4. Handler → internal/app/topics/commands/deleteTopic.go
+   Data: DeleteTopicRequest {User, TopicID}
+
+5. DeleteTopicRequestHandler → Repository → Database:
+   SQL: DELETE FROM topics WHERE id = ? AND user_id = ?
+
+6. Repository checks rows affected:
+   - 0 rows → Topic not found or user doesn't own it → 404 Not Found
+   - 1 row → Success
+
+7. Success → HTTP 200 OK
+   Response: {userId, topicId, message: "Topic deleted successfully"}
+
+
+PATTERN 9: FRONTEND HOMEPAGE RENDERING FLOW
+================================================================================
+1. Browser → GET http://localhost:3000/
+
+2. Request → cmd/client/handler/handler.go
+   Method: HomePage(w, r)
+
+3. Handler:
+   a) Reads cmd/client/data/categories.json
+   b) Unmarshals JSON into cmd/client/domain/categories.go → CategoryData struct
+
+4. Handler → cmd/client/helpers/color.go
+   NormalizeColors(categories):
+   - Adds "#" prefix to hex colors if missing
+   - Validates format (4 or 7 chars)
+   - Converts to uppercase
+   - Returns default "#CCCCCC" if invalid
+
+5. Handler → Template engine:
+   Files loaded:
+   - frontend/html/layouts/base.html (main structure)
+   - frontend/html/pages/home.html (content)
+   - frontend/html/partials/navbar.html
+   - frontend/html/partials/footer.html
+   - frontend/html/partials/category_details.html
+   - frontend/html/partials/categories.html
+
+6. Template receives data:
+   .Data.Categories = []Category{
+     {Name, Color, Slug, Description, Topics, Logo, ID, TopicCount}
+   }
+
+7. Template renders:
+   - Navbar with logo and auth status
+   - Category navigation dropdown (category_details.html)
+   - Category grid (categories.html) with 3 recent topics each
+   - Footer with credits
+
+8. HTML response → Browser
+
+9. Browser loads static assets:
+   - GET /static/css/base.css (typography, colors, resets)
+   - GET /static/css/layout.css (grid, containers)
+   - GET /static/css/pages.css (page-specific styles)
+   - GET /static/css/components.css (buttons, cards)
+   - GET /static/js/script.js (interactivity)
+
+10. JavaScript executes:
+    - Adds click listener to close dropdown on outside click
+    - Highlights active nav button based on URL path
+
+
+PATTERN 10: SESSION CLEANUP FLOW
+================================================================================
+1. SessionManager created with config:
+   - MaxSessionsPerUser: 5
+   - CleanupInterval: configurable (default: 1h)
+
+2. When CreateSession called:
+   a) Insert new session into database
+   b) Call DeleteSessionWhenNewCreated(ctx, newSessionToken, userID)
+
+3. SessionManager → Database:
+   SQL: SELECT token FROM sessions
+        WHERE user_id = ?
+        ORDER BY expires_at DESC
+
+4. If sessions > MaxSessionsPerUser (5):
+   - Keep newest 5 sessions
+   - Delete oldest sessions:
+     SQL: DELETE FROM sessions WHERE token = ?
+
+
+PATTERN 11: ERROR HANDLING FLOW
+================================================================================
+1. Error occurs in any layer
+
+2. Domain layer errors:
+   - internal/domain/user/* → Pure domain errors
+   - internal/app/topics/queries/errors.go → ErrTopicNotFound
+   - internal/app/user/queries/errors.go → ErrPasswordMismatch
+
+3. Infrastructure errors:
+   - internal/infra/storage/sqlite/errors.go → Maps SQLite errors
+     Example: UNIQUE constraint → ErrDuplicateEmail
+   - internal/infra/storage/sessionstore/errors.go → Session errors
+
+4. Validation errors:
+   - internal/pkg/validator/validator.go → Validator.Errors map
+   - internal/pkg/helpers/emailValidation.go → Email format errors
+
+5. Error bubbles up through layers:
+   Repository → Application Service → Handler
+
+6. Handler → internal/pkg/helpers/json_response.go
+   Method: RespondWithError(w, logger, statusCode, err)
+
+7. Logger → internal/infra/logger/logger.go
+   - Logs error with properties (request ID, user ID, timestamp)
+   - Includes stack trace for fatal errors
+
+8. HTTP Response:
+   {
+     "error": "error message",
+     "status": 400
+   }
+
+
+CROSS-CUTTING CONCERNS
+================================================================================
+
+LOGGING FLOW:
+- All handlers use internal/infra/logger/logger.go
+- Logger interface: PrintInfo, PrintError, PrintFatal
+- Thread-safe with mutex
+- Level-based filtering (Info, Error, Fatal, Off)
+- Timestamps in "2006-01-02T15:04:05.000" format
+- Fatal errors include stack trace via runtime.Stack()
+
+CONFIGURATION FLOW:
+- Server: internal/config/config.go reads .env
+- Client: cmd/client/config/config.go reads .env
+- Helper: internal/pkg/helpers/configuration.go
+  - ParseEnv() parses .env file into map
+  - GetEnv() checks OS env → .env file → default
+  - GetEnvDuration(), GetEnvBool(), GetEnvInt() for typed values
+- Path resolution: internal/pkg/path/path.go finds project root via go.mod
+
+
+DATA STRUCTURES REFERENCE
+================================================================================
+
+USER ENTITY (internal/domain/user/user.go):
+{
+  ID: string (UUID)
+  Username: string
+  Email: string
+  Password: string (bcrypt hash)
+  AvatarURL: *string (nullable)
+  Role: string
+  CreatedAt: time.Time
+}
+
+TOPIC ENTITY (internal/domain/user/topic.go):
+{
+  ID: int
+  UserID: string
+  OwnerUsername: string
+  CategoryID: int
+  Title: string
+  Content: string
+  ImagePath: string
+  CreatedAt: string
+  UpdatedAt: string
+  Comments: []Comment
+}
+
+COMMENT ENTITY (internal/domain/comments/comments.go):
+{
+  ID: int
+  TopicID: int
+  UserID: string
+  Username: string
+  Content: string
+  CreatedAt: time.Time
+  UpdatedAt: time.Time
+}
+
+SESSION ENTITY (internal/domain/session/session.go):
+{
+  AccessToken: string (UUID)
+  RefreshToken: string (UUID)
+  UserID: string
+  Expiry: time.Time
+  RefreshTokenExpiry: time.Time
+}
+
+CATEGORY ENTITY (cmd/client/domain/categories.go):
+{
+  ID: int
+  Name: string
+  Slug: string
+  Description: string
+  Color: string (hex)
+  TopicCount: int
+  Logo: {URL, ID, Width, Height}
+  Topics: []Topic (first 3)
+}
+
+
+DATABASE SCHEMA
+================================================================================
+
+TABLES:
+1. users
+   - id (TEXT PRIMARY KEY)
+   - username (TEXT UNIQUE NOT NULL)
+   - email (TEXT UNIQUE NOT NULL)
+   - password_hash (TEXT NOT NULL)
+   - avatar_url (TEXT)
+   - role (TEXT DEFAULT 'user')
+   - created_at (DATETIME)
+
+2. topics
+   - id (INTEGER PRIMARY KEY AUTOINCREMENT)
+   - user_id (TEXT NOT NULL FOREIGN KEY → users.id)
+   - category_id (INTEGER)
+   - title (TEXT NOT NULL)
+   - content (TEXT NOT NULL)
+   - image_path (TEXT)
+   - created_at (DATETIME)
+   - updated_at (DATETIME)
+
+3. comments
+   - id (INTEGER PRIMARY KEY AUTOINCREMENT)
+   - topic_id (INTEGER NOT NULL FOREIGN KEY → topics.id)
+   - user_id (TEXT NOT NULL FOREIGN KEY → users.id)
+   - content (TEXT NOT NULL)
+   - created_at (DATETIME)
+   - updated_at (DATETIME)
+
+4. sessions
+   - token (TEXT PRIMARY KEY)
+   - user_id (TEXT NOT NULL FOREIGN KEY → users.id)
+   - expires_at (DATETIME NOT NULL)
+   - refresh_token (TEXT NOT NULL)
+   - refresh_token_expires_at (DATETIME NOT NULL)
+
+FILES REFERENCED:
+- Schema: internal/infra/storage/sqlite/init.go loads schema.sql
+- Indexes: internal/infra/storage/sqlite/init.go loads indexes.sql
+- Seed data: dev_data.sql, test.sql (optional)
+
+
+API ENDPOINTS SUMMARY
+================================================================================
+
+PUBLIC ENDPOINTS (No authentication required):
+- POST /api/v1/register → Register new user
+- POST /api/v1/login/email → Login with email
+- POST /api/v1/login/username → Login with username
+- GET /api/v1/topics/get → Get single topic with comments
+- GET /api/v1/topics/all → Get paginated topics list
+
+PROTECTED ENDPOINTS (Authentication required):
+- GET /api/v1/health → Health check
+- POST /api/v1/topics/create → Create new topic
+- PUT /api/v1/topics/update → Update topic (owner only)
+- DELETE /api/v1/topics/delete → Delete topic (owner only)
+
+FRONTEND ENDPOINTS:
+- GET / → Homepage (served by client server on port 3000)
+- GET /static/* → Static assets (CSS, JS, images)
+
+
+SECURITY MECHANISMS
+================================================================================
+
+PASSWORD SECURITY:
+- Algorithm: bcrypt
+- Cost factor: 12
+- Implementation: internal/pkg/bcrypt/encryption.go
+- Flow: Plaintext → bcrypt.GenerateFromPassword → Database
+- Verification: bcrypt.CompareHashAndPassword
+
+SESSION SECURITY:
+- Token generation: UUID v4 (cryptographically secure)
+- Storage: Database-backed (persistent across restarts)
+- Expiry: Access token (24h), Refresh token (7 days) - configurable
+- Cookies: HTTPOnly (configurable), Secure (configurable), SameSite (configurable)
+- Max sessions per user: 5 (automatic cleanup)
+
+AUTHORIZATION:
+- Middleware: internal/infra/middleware/requireAuthorization.go
+- Method: Session token validation → Database lookup → User context
+- Topic ownership: Enforced in SQL WHERE clause (user_id = ?)
+- Protected routes: Topic create/update/delete, health check
+
+SQL INJECTION PREVENTION:
+- All queries use prepared statements with placeholders (?)
+- No string concatenation in SQL
+- Example: db.Query("SELECT * FROM users WHERE email = ?", email)
+
+CORS:
+- Middleware: internal/infra/middleware/cors.go
+- Current: Allow all origins (*)
+- Headers: Allow-Origin, Allow-Methods, Allow-Headers
+- Preflight: OPTIONS requests handled
+
+INPUT VALIDATION:
+- Framework: internal/pkg/validator/validator.go
+- Username: 3-50 characters
+- Email: RFC-compliant regex pattern
+- Password: 8-72 characters (bcrypt limit)
+- Topic title: 5-100 characters
+- Topic content: 10-1000 characters
+- Image path: .png, .jpg, .jpeg, .gif extensions only
+- Pagination: page (positive int), pageSize (max 100)
+- OrderBy: whitelist validation
+
+
+FILE DEPENDENCY GRAPH
+================================================================================
+
+ENTRY POINTS:
+cmd/server/main.go
+├─→ internal/config/config.go
+├─→ internal/infra/storage/sqlite/init.go
+│   ├─→ internal/pkg/path/path.go
+│   └─→ Database: forum.db (created/migrated)
+├─→ internal/infra/services.go
+│   └─→ internal/infra/storage/sqlite/repo.go (implements user.Repository)
+├─→ internal/app/services.go
+│   ├─→ internal/app/user/queries/userRegister.go
+│   │   ├─→ internal/pkg/uuid/uuid.go
+│   │   ├─→ internal/pkg/bcrypt/encryption.go
+│   │   └─→ internal/pkg/helpers/emailValidation.go
+│   ├─→ internal/app/user/queries/userLoginEmail.go
+│   ├─→ internal/app/user/queries/userLoginUsername.go
+│   ├─→ internal/app/topics/commands/createTopic.go
+│   ├─→ internal/app/topics/commands/updateTopic.go
+│   ├─→ internal/app/topics/commands/deleteTopic.go
+│   ├─→ internal/app/topics/queries/getAllTopics.go
+│   └─→ internal/app/topics/queries/getTopic.go
+└─→ internal/infra/http/server.go
+    ├─→ internal/infra/middleware/cors.go
+    ├─→ internal/infra/middleware/requireAuthorization.go
+    ├─→ internal/infra/middleware/optionalAuthorization.go
+    ├─→ internal/infra/storage/sessionstore/sessionManager.go
+    ├─→ internal/infra/http/health/handler.go
+    ├─→ internal/infra/http/user/register/registerhandler.go
+    ├─→ internal/infra/http/user/login/LoginEmailHandler.go
+    ├─→ internal/infra/http/user/login/loginUsernameHandler.go
+    ├─→ internal/infra/http/topic/createTopic/createTopicHandler.go
+    ├─→ internal/infra/http/topic/updateTopic/updateTopicHandler.go
+    ├─→ internal/infra/http/topic/deleteTopic/deleteTopicHandler.go
+    ├─→ internal/infra/http/topic/getTopic/getTopicHandler.go
+    └─→ internal/infra/http/topic/getAllTopics/getAllTopicsHandler.go
+
+cmd/client/main.go
+├─→ cmd/client/config/config.go
+├─→ cmd/client/handler/handler.go
+│   ├─→ cmd/client/data/categories.json
+│   ├─→ cmd/client/domain/categories.go
+│   ├─→ cmd/client/helpers/color.go
+│   ├─→ frontend/html/layouts/base.html
+│   ├─→ frontend/html/pages/home.html
+│   ├─→ frontend/html/pages/not_found.html
+│   ├─→ frontend/html/partials/navbar.html
+│   ├─→ frontend/html/partials/footer.html
+│   ├─→ frontend/html/partials/category_details.html
+│   └─→ frontend/html/partials/categories.html
+└─→ Static file server:
+    ├─→ frontend/static/css/base.css
+    ├─→ frontend/static/css/layout.css
+    ├─→ frontend/static/css/pages.css
+    ├─→ frontend/static/css/components.css
+    └─→ frontend/static/js/script.js
+
+DOMAIN LAYER (No dependencies on other layers):
+internal/domain/user/user.go
+internal/domain/user/topic.go ─→ internal/domain/comments/comments.go
+internal/domain/user/repository.go (interface)
+internal/domain/session/session.go ─→ internal/domain/user/user.go
+internal/domain/session/sessionManager.go (interface)
+
+SHARED UTILITIES (Used by multiple layers):
+internal/pkg/helpers/body_request.go
+internal/pkg/helpers/configuration.go
+internal/pkg/helpers/context.go
+internal/pkg/helpers/emailValidation.go
+internal/pkg/helpers/json_response.go
+internal/pkg/path/path.go
+internal/pkg/uuid/uuid.go
+internal/pkg/bcrypt/encryption.go
+internal/pkg/validator/validator.go
+internal/pkg/validator/validationCases.go
+
+
+DATA FLOW VISUALIZATION
+================================================================================
+
+USER REGISTRATION:
+Browser → Register Handler → Validator → UserRegister Service →
+UUID Generator → Email Validator → Bcrypt Hasher → Repository →
+SQLite (users table) → Success Response
+
+USER LOGIN:
+Browser → Login Handler → Validator → UserLogin Service →
+Repository → SQLite (SELECT user) → Bcrypt Verifier →
+Session Manager → SQLite (INSERT session) → Token Cookies →
+Success Response
+
+AUTHENTICATED REQUEST:
+Browser (with cookies) → CORS Middleware → Auth Middleware →
+Session Manager → SQLite (SELECT session JOIN user) →
+Context (add user) → Handler → Application Service →
+Repository → SQLite → Response
+
+TOPIC CREATION:
+Authenticated Request → Create Topic Handler → Validator →
+CreateTopic Command → Repository → SQLite (INSERT topic) →
+Success Response
+
+TOPIC RETRIEVAL:
+Browser → Get Topic Handler → GetTopic Query → Repository →
+SQLite (SELECT topic LEFT JOIN comments JOIN users) →
+Aggregate comments → Success Response (topic with comments)
+
+PAGINATED TOPICS:
+Browser → GetAll Handler → Validator (pagination) → GetAllTopics Query →
+Repository → SQLite (SELECT with LIMIT/OFFSET + COUNT) →
+JSON Response Helper (adds pagination metadata) →
+Success Response (topics + totalCount + pageInfo)
+
+FRONTEND RENDERING:
+Browser → Client Handler → Read categories.json →
+Normalize colors → Template Engine (load 6+ HTML files) →
+Render with category data → HTML Response →
+Browser loads 4 CSS files + 1 JS file
+
+
+TESTING ARTIFACTS
+================================================================================
+Test files found in codebase:
+1. internal/app/topics/commands/createTopic_test.go
+2. internal/app/topics/commands/updateTopic_test.go
+3. internal/app/user/queries/userLoginEmail_test.go
+4. internal/app/user/queries/userLogin_test.go
+5. internal/app/user/queries/userLoginUsername_test.go
+6. internal/app/user/queries/userRegister_test.go
+7. internal/infra/middleware/optionalAuthorization_test.go
+8. internal/infra/middleware/requireAuthorization_test.go
+9. internal/infra/middleware/services_test.go
+10. internal/pkg/uuid/uuid_test.go
+
+Test helpers:
+- internal/pkg/testing/helpers.go
+- internal/pkg/testing/mocks.go
+
+
+CONFIGURATION FILES
+================================================================================
+.env file variables (loaded by config.go files):
+- SERVER_HOST, SERVER_PORT
+- CLIENT_HOST, CLIENT_PORT
+- ENVIRONMENT (dev/staging/production)
+- API_CONTEXT (default: /api/v1)
+- DATABASE_DRIVER (sqlite3)
+- DATABASE_PATH (./forum.db)
+- MIGRATE_ON_START (bool)
+- SEED_ON_START (bool)
+- SESSION_COOKIE_NAME
+- SESSION_DEFAULT_EXPIRY (seconds)
+- SESSION_REFRESH_TOKEN_EXPIRY (seconds)
+- SESSION_MAX_PER_USER (default: 5)
+- HTTP timeouts (read, write, idle)
+
+
+PERFORMANCE CONSIDERATIONS
+================================================================================
+
+DATABASE:
+- Connection pooling: OpenConn configurable in .env
+- Prepared statements: Reused for repeated queries
+- Indexes: indexes.sql applied on startup
+- Transactions: Used in topic update to ensure consistency
+
+SESSION MANAGEMENT:
+- In-memory cache: Not implemented (all sessions in DB)
+- Cleanup strategy: Automatic when max sessions exceeded
+- Token validation: Single DB query with JOIN
+
+PAGINATION:
+- LIMIT/OFFSET for topics retrieval
+- Separate COUNT query for total (could be optimized with OVER())
+- Max page size: 100 (prevents excessive data transfer)
+
+MIDDLEWARE:
+- CORS: Applied to all requests (minimal overhead)
+- Auth: DB query per protected request (could add caching)
+- Context: User stored in request context (avoids repeated DB calls)
+
+
+POTENTIAL IMPROVEMENTS
+================================================================================
+
+1. CACHING:
+   - Redis for session storage (reduce DB load)
+   - In-memory cache for categories (static data)
+   - HTTP cache headers for static assets
+
+2. SECURITY:
+   - Rate limiting on login endpoints (prevent brute force)
+   - CORS: Restrict to specific origins (not *)
+   - Content Security Policy headers
+   - HTTPS enforcement (currently configurable)
+
+3. DATABASE:
+   - Connection pooling optimization
+   - Query result caching
+   - Database migrations framework (currently manual SQL files)
+   - Soft deletes for topics (add deleted_at column)
+
+4. VALIDATION:
+   - XSS prevention in topic content (sanitize HTML)
+   - File upload validation for images (currently only path stored)
+   - Rate limiting per user
+
+5. ERROR HANDLING:
+   - Structured error responses with error codes
+   - Client-friendly error messages
+   - Correlation IDs for request tracing
+
+6. MONITORING:
+   - Metrics endpoint (request count, latency, errors)
+   - Structured logging (JSON format)
+   - Database query performance logging
+
+7. FRONTEND:
+   - API integration (currently static categories)
+   - Client-side routing
+   - State management
+   - Real-time updates (WebSockets)
+
+8. TESTING:
+   - Integration tests for handlers
+   - End-to-end tests
+   - Load testing
+   - Test coverage reporting
+
+
+SUMMARY
+================================================================================
+
+This forum application demonstrates Clean Architecture principles with clear
+separation between:
+- Domain logic (entities and interfaces)
+- Application logic (use cases)
+- Infrastructure (HTTP, database, external services)
+
+Data flows through well-defined layers:
+1. HTTP Request → Handler (infrastructure)
+2. Handler → Application Service (use case)
+3. Application Service → Repository (domain interface)
+4. Repository → Database (infrastructure implementation)
+5. Response flows back through the same layers
+
+Key strengths:
+- Dependency inversion (layers depend on interfaces, not implementations)
+- Testability (mocks available for interfaces)
+- Security (bcrypt, prepared statements, session management)
+- Modularity (each handler/service has single responsibility)
+
+Total data flow paths documented: 11 main patterns
+Total files analyzed: 71 files
+Architecture layers: 4 (Domain, Application, Infrastructure, Entry Points)
+API endpoints: 10 (5 public, 5 protected)
+Database tables: 4 (users, topics, comments, sessions)
+
+================================================================================
+                            END OF REPORT
+================================================================================
