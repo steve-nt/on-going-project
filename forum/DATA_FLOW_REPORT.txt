@@ -522,6 +522,291 @@ Key Data Flow Patterns:
 - Authentication: Session Store ↔ Database ↔ Middleware ↔ Protected Routes
 
 ================================================================================
+                         LEARNING RESOURCES & REFERENCES
+================================================================================
+
+BEGINNER-FRIENDLY LEARNING RESOURCES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## GO PROGRAMMING LANGUAGE:
+
+**Official Documentation:**
+- Go Tour (Interactive): https://tour.golang.org/
+- Go by Example: https://gobyexample.com/
+- Effective Go: https://golang.org/doc/effective_go
+- Go Documentation: https://golang.org/doc/
+- Go Package Reference: https://pkg.go.dev/
+
+**Books & Courses:**
+- "The Go Programming Language" by Alan Donovan & Brian Kernighan
+- "Go in Action" by William Kennedy
+- "Learn Go with Tests" (Free): https://quii.gitbook.io/learn-go-with-tests/
+- Go Fundamentals (Free Course): https://golang.org/doc/tutorial/
+
+**Key Concepts Referenced in Code:**
+- Pointers vs Values: https://golang.org/doc/effective_go#pointers_vs_values
+- Struct Literals: https://golang.org/ref/spec#Composite_literals
+- Error Handling: https://golang.org/doc/effective_go#errors
+- Interfaces: https://golang.org/doc/effective_go#interfaces
+- Goroutines & Channels: https://golang.org/doc/effective_go#goroutines
+
+## SOFTWARE ARCHITECTURE PATTERNS:
+
+**Clean Architecture:**
+- Original Article: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html
+- Clean Architecture Book by Robert C. Martin
+- Clean Architecture in Go: https://github.com/bxcodec/go-clean-arch
+
+**Domain-Driven Design (DDD):**
+- DDD Overview: https://martinfowler.com/bliki/DomainDrivenDesign.html
+- DDD Aggregates: https://martinfowler.com/bliki/DDD_Aggregate.html
+- Bounded Context: https://martinfowler.com/bliki/BoundedContext.html
+
+**Design Patterns:**
+- Repository Pattern: https://martinfowler.com/eaaCatalog/repository.html
+- Dependency Injection: https://martinfowler.com/articles/injection.html
+- SOLID Principles: https://en.wikipedia.org/wiki/SOLID
+
+## WEB DEVELOPMENT CONCEPTS:
+
+**HTTP & REST APIs:**
+- HTTP Protocol: https://developer.mozilla.org/en-US/docs/Web/HTTP
+- REST API Design: https://restfulapi.net/
+- Go HTTP Package: https://golang.org/pkg/net/http/
+- HTTP Status Codes: https://httpstatuses.com/
+
+**Web Security:**
+- OWASP Top 10: https://owasp.org/www-project-top-ten/
+- Session Management: https://developer.mozilla.org/en-US/docs/Web/HTTP/Session_management
+- Password Hashing: https://auth0.com/blog/hashing-passwords-one-way-road-to-security/
+- CORS Explained: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+
+**Database Design:**
+- SQL Tutorial: https://www.w3schools.com/sql/
+- SQLite Documentation: https://www.sqlite.org/docs.html
+- Database Normalization: https://en.wikipedia.org/wiki/Database_normalization
+
+## FRONTEND TECHNOLOGIES:
+
+**HTML & CSS:**
+- HTML Basics: https://developer.mozilla.org/en-US/docs/Learn/HTML
+- CSS Tutorial: https://developer.mozilla.org/en-US/docs/Learn/CSS
+- HTML Templates: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
+
+**JavaScript:**
+- Modern JavaScript: https://javascript.info/
+- DOM Manipulation: https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model
+- Event Handling: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
+- Fetch API: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+
+## DEVELOPMENT TOOLS & PRACTICES:
+
+**Version Control:**
+- Git Tutorial: https://learngitbranching.js.org/
+- GitHub Flow: https://guides.github.com/introduction/flow/
+
+**Testing:**
+- Go Testing: https://golang.org/pkg/testing/
+- Test-Driven Development: https://en.wikipedia.org/wiki/Test-driven_development
+
+**Configuration Management:**
+- 12-Factor App: https://12factor.net/
+- Environment Variables: https://12factor.net/config
+
+**Microservices:**
+- Microservices Pattern: https://martinfowler.com/articles/microservices.html
+- Building Microservices (Book) by Sam Newman
+
+================================================================================
+                              CODE ANNOTATIONS
+================================================================================
+
+The codebase has been enhanced with comprehensive comments explaining:
+
+✅ **Entry Points (main.go files):**
+- Application startup sequence
+- Dependency injection pattern
+- Clean Architecture layer setup
+- Server configuration and lifecycle
+
+✅ **Configuration Management:**
+- Environment variable handling
+- Struct field explanations
+- Validation patterns
+- 12-factor app principles
+
+✅ **Domain Models:**
+- Entity relationship explanations
+- Field ordering rationale
+- Design pattern applications
+- Future enhancement suggestions
+
+✅ **Frontend JavaScript:**
+- DOM manipulation techniques
+- Event handling patterns
+- UX improvement strategies
+- Performance considerations
+
+📝 **Still Being Enhanced:**
+- Application layer (use cases)
+- Infrastructure layer (HTTP handlers, database)
+- Utility packages (helpers, validators)
+- Client components (handlers, config)
+
+================================================================================
+                           COMMENTED CODE EXAMPLES
+================================================================================
+
+**Example 1: Server Startup Flow (cmd/server/main.go:27-34)**
+```go
+// STEP 1: Load configuration from environment variables and .env file
+cfg, err := config.LoadConfig()
+if err != nil {
+    log.Fatalf("Configuration error: %v", err)
+}
+```
+
+**Example 2: Domain Entity Design (internal/domain/user/user.go:15-33)**
+```go
+type User struct {
+    // Identity fields - unique identifiers for the user
+    ID       string  // Unique user identifier (UUID format)
+    Username string  // Unique username for login and display
+    Email    string  // Unique email address for login and notifications
+    // ... detailed field explanations
+}
+```
+
+**Example 3: Frontend Interaction (frontend/static/js/script.js:12-32)**
+```javascript
+// FEATURE 1: Close category details dropdown when clicking outside
+document.addEventListener("click", function (event) {
+    // Guard clause: if no details element exists, exit early
+    if (!details) return;
+    // ... detailed DOM manipulation explanation
+});
+```
+
+================================================================================
+                              STUDY ROADMAP
+================================================================================
+
+**For Complete Beginners:**
+
+📚 **Week 1-2: Go Fundamentals**
+1. Complete Go Tour: https://tour.golang.org/
+2. Read "Go by Example": https://gobyexample.com/
+3. Practice basic syntax, types, and functions
+
+📚 **Week 3-4: Web Development Basics**
+1. Learn HTTP fundamentals
+2. Build simple Go HTTP server
+3. Understand request/response cycle
+
+📚 **Week 5-6: Database Integration**
+1. Learn SQL basics
+2. Practice SQLite operations
+3. Understand CRUD operations
+
+📚 **Week 7-8: Architecture Patterns**
+1. Study Clean Architecture principles
+2. Understand separation of concerns
+3. Practice dependency injection
+
+**For Intermediate Developers:**
+
+🔧 **Month 1: Advanced Go Patterns**
+1. Master interfaces and composition
+2. Learn error handling best practices
+3. Study concurrency with goroutines
+
+🔧 **Month 2: System Design**
+1. Design scalable web applications
+2. Learn about microservices
+3. Study security best practices
+
+🔧 **Month 3: DevOps & Deployment**
+1. Learn containerization (Docker)
+2. Understand CI/CD pipelines
+3. Practice monitoring and logging
+
+================================================================================
+                             PROJECT EXERCISES
+================================================================================
+
+**Beginner Exercises (Using This Codebase):**
+
+1. **Add New Field to User Entity**
+   - Add "LastLoginAt" field to User struct
+   - Update database schema
+   - Modify registration/login handlers
+
+2. **Implement Comment Editing**
+   - Add HTTP endpoint for comment updates
+   - Create edit comment handler
+   - Add authorization checks
+
+3. **Add Input Validation**
+   - Strengthen password requirements
+   - Add email format validation
+   - Implement rate limiting
+
+**Intermediate Exercises:**
+
+1. **Add Search Functionality**
+   - Create search API endpoint
+   - Implement full-text search
+   - Add search UI components
+
+2. **Implement User Roles**
+   - Add role-based access control
+   - Create admin functionality
+   - Add moderation features
+
+3. **Add Real-time Features**
+   - Implement WebSocket connections
+   - Add real-time notifications
+   - Create live comment updates
+
+**Advanced Exercises:**
+
+1. **Microservices Decomposition**
+   - Split into separate services
+   - Implement service communication
+   - Add distributed tracing
+
+2. **Performance Optimization**
+   - Add Redis caching layer
+   - Implement database indexing
+   - Add CDN for static assets
+
+3. **Observability**
+   - Add comprehensive logging
+   - Implement metrics collection
+   - Create monitoring dashboards
+
+================================================================================
+                                COMMUNITY
+================================================================================
+
+**Go Community Resources:**
+- Go Forum: https://forum.golangbridge.org/
+- Gopher Slack: https://gophers.slack.com/
+- Reddit r/golang: https://reddit.com/r/golang
+- Go Blog: https://blog.golang.org/
+
+**Stack Overflow Tags:**
+- #golang
+- #go-modules
+- #go-http
+- #clean-architecture
+
+**YouTube Channels:**
+- GopherCon Talks
+- Ardan Labs
+- Just for Func
+
+================================================================================
                               END OF REPORT
 ================================================================================
 
