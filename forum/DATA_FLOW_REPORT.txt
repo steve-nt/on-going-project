@@ -1,5 +1,5 @@
 ================================================================================
-                    FORUM APPLICATION - DATA FLOW REPORT
+                    FORUM APPLICATION DATA FLOW REPORT
 ================================================================================
 
 PROJECT OVERVIEW
@@ -15,9 +15,15 @@ Total Files Analyzed: 71 files
 - Frontend files: 8 (HTML/CSS/JS)
 - Data files: 2 (JSON)
 
-
-ARCHITECTURE LAYERS
 ================================================================================
+                         APPLICATION ARCHITECTURE
+================================================================================
+
+The application consists of two main components:
+1. SERVER: API backend (cmd/server/main.go) - Port varies by config
+2. CLIENT: Frontend web server (cmd/client/main.go) - Port varies by config
+
+ARCHITECTURE LAYERS:
 
 1. DOMAIN LAYER (Pure Business Logic)
    - internal/domain/user/user.go
@@ -45,6 +51,479 @@ ARCHITECTURE LAYERS
 4. ENTRY POINTS
    - cmd/server/main.go (Backend API server)
    - cmd/client/main.go (Frontend static file server)
+
+================================================================================
+                           DETAILED DATA FLOW
+================================================================================
+
+1. APPLICATION STARTUP FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SERVER STARTUP:
+cmd/server/main.go
+    ↓ (loads config)
+internal/config/config.go
+    ↓ (initializes database)
+internal/infra/storage/sqlite/init.go
+    ↓ (executes schema)
+db/migrations/schema.sql
+    ↓ (creates repository)
+internal/infra/storage/sqlite/repo.go
+    ↓ (creates app services)
+internal/app/app.go
+    ↓ (creates HTTP server)
+internal/infra/http/server.go
+    ↓ (sets up routes and middleware)
+internal/infra/middleware/middleware.go
+
+CLIENT STARTUP:
+cmd/client/main.go
+    ↓ (loads client config)
+cmd/client/config/config.go
+    ↓ (sets up routes)
+cmd/client/handler/handler.go
+    ↓ (serves static files and homepage)
+frontend/static/js/script.js
+frontend/html/layouts/base.html
+
+================================================================================
+
+2. USER REGISTRATION FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Frontend Form Submission:
+frontend/html/pages/register.html
+    ↓ (JavaScript AJAX POST)
+frontend/static/js/script.js
+    ↓ (HTTP POST /api/v1/register)
+internal/infra/http/server.go (router)
+    ↓ (routes to register handler)
+internal/infra/http/user/register/registerhandler.go
+    ↓ (validates request)
+internal/pkg/validator/validator.go
+    ↓ (calls user service)
+internal/app/user/queries/userRegister.go
+    ↓ (hashes password)
+internal/pkg/bcrypt/bcrypt.go
+    ↓ (generates UUID)
+internal/pkg/uuid/uuid.go
+    ↓ (saves to database)
+internal/infra/storage/sqlite/repo.go (UserRegister method)
+    ↓ (inserts into users table)
+SQLite Database (users table)
+    ↓ (returns success response)
+internal/infra/http/user/register/registerhandler.go
+    ↓ (JSON response to frontend)
+Frontend JavaScript
+
+================================================================================
+
+3. USER LOGIN FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LOGIN BY EMAIL:
+Frontend Form:
+frontend/html/pages/login.html
+    ↓ (AJAX POST)
+frontend/static/js/script.js
+    ↓ (HTTP POST /api/v1/login/email)
+internal/infra/http/server.go
+    ↓ (routes to email login handler)
+internal/infra/http/user/login/LoginEmailHandler.go
+    ↓ (validates credentials)
+internal/app/user/queries/userLoginEmail.go
+    ↓ (verifies password)
+internal/pkg/bcrypt/bcrypt.go
+    ↓ (queries database)
+internal/infra/storage/sqlite/repo.go (GetUserByEmail method)
+    ↓ (reads from users table)
+SQLite Database (users table)
+    ↓ (creates session)
+internal/infra/storage/sessionstore/sessionManager.go
+    ↓ (stores session)
+SQLite Database (sessions table)
+    ↓ (returns session token)
+internal/infra/http/user/login/LoginEmailHandler.go
+
+LOGIN BY USERNAME:
+Frontend Form:
+frontend/html/pages/login.html
+    ↓ (AJAX POST)
+frontend/static/js/script.js
+    ↓ (HTTP POST /api/v1/login/username)
+internal/infra/http/server.go
+    ↓ (routes to username login handler)
+internal/infra/http/user/login/loginUsernameHandler.go
+    ↓ (validates credentials)
+internal/app/user/queries/userLoginUsername.go
+    ↓ (queries database)
+internal/infra/storage/sqlite/repo.go (GetUserByUsername method)
+    ↓ (follows same session creation flow as email login)
+
+================================================================================
+
+4. TOPIC CREATION FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Frontend Topic Form:
+frontend/html/pages/create_topic.html
+    ↓ (AJAX POST with authentication)
+frontend/static/js/script.js
+    ↓ (HTTP POST /api/v1/topics/create)
+internal/infra/http/server.go
+    ↓ (middleware chain: auth required)
+internal/infra/middleware/middleware.go (RequireAuth)
+    ↓ (validates session)
+internal/infra/storage/sessionstore/sessionManager.go
+    ↓ (routes to create handler)
+internal/infra/http/topic/createTopic/createTopicHandler.go
+    ↓ (validates topic data)
+internal/pkg/validator/validator.go
+    ↓ (calls topic service)
+internal/app/topics/commands/createTopic.go
+    ↓ (saves to database)
+internal/infra/storage/sqlite/repo.go (CreateTopic method)
+    ↓ (inserts into topics table)
+SQLite Database (topics table)
+
+================================================================================
+
+5. TOPIC RETRIEVAL FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET ALL TOPICS:
+Frontend Request:
+frontend/static/js/script.js
+    ↓ (HTTP GET /api/v1/topics/all)
+internal/infra/http/server.go
+    ↓ (routes to get all topics handler)
+internal/infra/http/topic/getAllTopics/getAllTopicsHandler.go
+    ↓ (calls service)
+internal/app/topics/queries/getAllTopics.go
+    ↓ (queries database with pagination)
+internal/infra/storage/sqlite/repo.go (GetAllTopics method)
+    ↓ (reads from topics table with JOIN to users)
+SQLite Database (topics + users tables)
+    ↓ (returns topic list with pagination)
+Frontend JavaScript
+
+GET SINGLE TOPIC:
+Frontend Request:
+frontend/static/js/script.js
+    ↓ (HTTP GET /api/v1/topics/get?id=123)
+internal/infra/http/server.go
+    ↓ (routes to get topic handler)
+internal/infra/http/topic/getTopic/getTopicHandler.go
+    ↓ (calls service)
+internal/app/topics/queries/getTopic.go
+    ↓ (queries database)
+internal/infra/storage/sqlite/repo.go (GetTopicByID method)
+    ↓ (LEFT JOIN topics, comments, users)
+SQLite Database (topics + comments + users tables)
+    ↓ (returns topic with comments)
+Frontend JavaScript
+
+================================================================================
+
+6. TOPIC UPDATE FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Frontend Update Form:
+frontend/html/pages/edit_topic.html
+    ↓ (AJAX PUT/POST)
+frontend/static/js/script.js
+    ↓ (HTTP POST /api/v1/topics/update)
+internal/infra/http/server.go
+    ↓ (middleware: auth required)
+internal/infra/middleware/middleware.go
+    ↓ (routes to update handler)
+internal/infra/http/topic/updateTopic/updateTopicHandler.go
+    ↓ (validates ownership and data)
+internal/app/topics/commands/updateTopic.go
+    ↓ (updates database with transaction)
+internal/infra/storage/sqlite/repo.go (UpdateTopic method)
+    ↓ (UPDATE topics WHERE id = ? AND user_id = ?)
+SQLite Database (topics table)
+
+================================================================================
+
+7. TOPIC DELETION FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Frontend Delete Action:
+frontend/static/js/script.js
+    ↓ (HTTP DELETE /api/v1/topics/delete)
+internal/infra/http/server.go
+    ↓ (middleware: auth required)
+internal/infra/middleware/middleware.go
+    ↓ (routes to delete handler)
+internal/infra/http/topic/deleteTopic/deleteTopicHandler.go
+    ↓ (validates ownership)
+internal/app/topics/commands/deleteTopic.go
+    ↓ (deletes from database)
+internal/infra/storage/sqlite/repo.go (DeleteTopic method)
+    ↓ (DELETE FROM topics WHERE id = ? AND user_id = ?)
+SQLite Database (topics table)
+    ↓ (CASCADE deletes comments due to foreign key)
+SQLite Database (comments table)
+
+================================================================================
+
+8. HOMEPAGE DATA FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+User Visits Homepage:
+Browser → HTTP GET /
+    ↓ (client server handles request)
+cmd/client/main.go (setupRoutes)
+    ↓ (routes to homepage handler)
+cmd/client/handler/handler.go (HomePage function)
+    ↓ (reads static category data)
+cmd/client/data/categories.json
+    ↓ (processes categories)
+cmd/client/helpers/helpers.go (PrepareCategories)
+    ↓ (loads HTML templates)
+frontend/html/layouts/base.html
+frontend/html/partials/navbar.html
+frontend/html/partials/categories.html
+frontend/html/partials/category_details.html
+frontend/html/partials/footer.html
+    ↓ (executes template with data)
+cmd/client/handler/handler.go
+    ↓ (serves HTML to browser)
+Browser
+
+================================================================================
+
+9. SESSION MANAGEMENT FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SESSION CREATION (during login):
+internal/infra/http/user/login/LoginEmailHandler.go
+    ↓ (creates session)
+internal/infra/storage/sessionstore/sessionManager.go (CreateSession)
+    ↓ (generates tokens)
+internal/pkg/uuid/uuid.go
+    ↓ (stores session)
+SQLite Database (sessions table)
+    ↓ (returns session token)
+HTTP Response (Set-Cookie header)
+
+SESSION VALIDATION (on protected routes):
+HTTP Request (with session cookie)
+    ↓ (middleware intercepts)
+internal/infra/middleware/middleware.go (RequireAuth)
+    ↓ (validates session)
+internal/infra/storage/sessionstore/sessionManager.go (ValidateSession)
+    ↓ (queries database)
+SQLite Database (sessions table)
+    ↓ (checks expiration and validity)
+internal/infra/storage/sessionstore/sessionManager.go
+    ↓ (allows or denies request)
+Route Handler or Error Response
+
+================================================================================
+
+10. DATABASE SCHEMA AND RELATIONSHIPS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Database Schema (db/migrations/schema.sql):
+
+users table:
+- id (TEXT PRIMARY KEY)
+- email (TEXT UNIQUE)
+- username (TEXT UNIQUE)
+- password_hash (TEXT)
+- created_at (DATETIME)
+- avatar_url (TEXT)
+
+sessions table:
+- token (TEXT PRIMARY KEY)
+- user_id (TEXT → users.id)
+- expires_at (DATETIME)
+- refresh_token (TEXT)
+- refresh_token_expires_at (DATETIME)
+
+categories table:
+- id (INTEGER PRIMARY KEY)
+- name (TEXT UNIQUE)
+- description (TEXT)
+- created_at (DATETIME)
+
+topics table:
+- id (INTEGER PRIMARY KEY)
+- user_id (TEXT → users.id)
+- category_id (INTEGER → categories.id)
+- title (TEXT)
+- content (TEXT)
+- image_path (TEXT)
+- created_at (DATETIME)
+- updated_at (DATETIME)
+
+comments table:
+- id (INTEGER PRIMARY KEY)
+- user_id (TEXT → users.id)
+- topic_id (INTEGER → topics.id)
+- content (TEXT)
+- created_at (DATETIME)
+- updated_at (DATETIME)
+
+votes table:
+- id (INTEGER PRIMARY KEY)
+- user_id (TEXT → users.id)
+- topic_id (INTEGER → topics.id)
+- comment_id (INTEGER → comments.id)
+- reaction_type (INTEGER: -1 or 1)
+- created_at (DATETIME)
+
+================================================================================
+
+11. DOMAIN MODELS AND DATA STRUCTURES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+User Model (internal/domain/user/user.go):
+- ID (string)
+- Username (string)
+- Email (string)
+- Password (string)
+- Role (string)
+- AvatarURL (*string)
+- CreatedAt (time.Time)
+
+Topic Model (internal/domain/user/topic.go):
+- ID (int)
+- UserID (string)
+- OwnerUsername (string)
+- Title (string)
+- Content (string)
+- ImagePath (string)
+- CategoryID (int)
+- CreatedAt (string)
+- UpdatedAt (string)
+- Comments ([]comments.Comment)
+
+Comment Model (internal/domain/comments/comments.go):
+- ID (int)
+- UserID (string)
+- Username (string)
+- TopicID (int)
+- Content (string)
+- CreatedAt (time.Time)
+- UpdatedAt (time.Time)
+
+Session Model (internal/domain/session/session.go):
+- Token (string)
+- UserID (string)
+- ExpiresAt (time.Time)
+- RefreshToken (string)
+- RefreshTokenExpiresAt (time.Time)
+
+================================================================================
+
+12. ERROR HANDLING AND LOGGING FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Error Occurrence:
+Any Layer (Handler/Service/Repository)
+    ↓ (logs error)
+internal/infra/logger/logger.go
+    ↓ (maps database errors)
+internal/infra/storage/sqlite/errors.go
+    ↓ (returns formatted error response)
+internal/pkg/helpers/response.go
+    ↓ (sends JSON error to client)
+HTTP Response
+
+Custom Error Types:
+- ErrUserNotFound
+- ErrTopicNotFound
+- ErrInvalidCredentials
+- ErrValidationFailed
+- ErrSessionExpired
+
+================================================================================
+
+13. STATIC FILE SERVING FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Browser Request for Static File:
+HTTP GET /static/css/style.css
+    ↓ (client server handles)
+cmd/client/main.go (setupRoutes)
+    ↓ (strips /static/ prefix)
+http.StripPrefix("/static/", ...)
+    ↓ (serves from filesystem)
+http.FileServer(http.Dir("frontend/static/"))
+    ↓ (resolves path)
+internal/pkg/path/path.go (GetPath method)
+    ↓ (returns file)
+frontend/static/css/style.css
+frontend/static/js/script.js
+frontend/static/images/*
+
+================================================================================
+
+14. CONFIGURATION FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Application Startup:
+main.go functions
+    ↓ (loads config files)
+internal/config/config.go (LoadConfig)
+cmd/client/config/config.go (LoadClientConfig)
+    ↓ (reads environment variables)
+.env files
+    ↓ (sets timeouts, ports, database settings)
+Config Structs
+    ↓ (passed to all components)
+Handlers, Services, Database
+
+================================================================================
+
+15. MIDDLEWARE CHAIN FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HTTP Request:
+Browser/Client
+    ↓ (enters middleware chain)
+internal/infra/middleware/middleware.go (NewCorsMiddleware)
+    ↓ (CORS headers added)
+Request continues
+    ↓ (auth middleware for protected routes)
+internal/infra/middleware/middleware.go (RequireAuth)
+    ↓ (session validation)
+internal/infra/storage/sessionstore/sessionManager.go
+    ↓ (request reaches handler)
+Route Handler Function
+    ↓ (response travels back through middleware)
+HTTP Response to Client
+
+================================================================================
+
+SUMMARY:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This forum application demonstrates a clean separation of concerns with:
+
+1. CLIENT SERVER: Serves static files and templates
+2. API SERVER: Handles business logic and data operations
+3. DATABASE: SQLite for data persistence
+4. FRONTEND: HTML templates with JavaScript for interactivity
+
+Data flows bidirectionally between these components, with proper authentication,
+validation, and error handling at each layer. The architecture supports
+scalability and maintainability through dependency injection and interface
+abstractions.
+
+Key Data Flow Patterns:
+- Request → Middleware → Handler → Service → Repository → Database
+- Database → Repository → Service → Handler → Response
+- Static Content: Client Server → File System → Browser
+- Authentication: Session Store ↔ Database ↔ Middleware ↔ Protected Routes
+
+================================================================================
+                              END OF REPORT
+================================================================================
 
 
 MAIN DATA FLOW PATTERNS
