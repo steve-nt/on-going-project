@@ -1,0 +1,555 @@
+================================================================================
+LAB 3 - SOURCES AND REFERENCES
+PERSON B IMPLEMENTATION
+================================================================================
+
+This document lists all sources, references, and materials used in the
+implementation and research for Person B's tasks in Lab 3.
+
+================================================================================
+RFC STANDARDS & SPECIFICATIONS
+================================================================================
+
+[RFC4226] M'Raihi, D., Bellare, M., Hoornaert, F., Naccache, D., & Ranen, O.
+          "HOTP: An HMAC-Based One-Time Password Algorithm"
+          RFC 4226, December 2005
+          https://datatracker.ietf.org/doc/html/rfc4226
+
+[RFC6238] M'Raihi, D., Machani, S., Pei, M., & Rydell, J.
+          "TOTP: Time-Based One-Time Password Algorithm"
+          RFC 6238, May 2011
+          https://datatracker.ietf.org/doc/html/rfc6238
+
+[RFC2104] Krawczyk, H., Bellare, M., & Canetti, R.
+          "HMAC: Keyed-Hashing for Message Authentication"
+          RFC 2104, February 1997
+          https://datatracker.ietf.org/doc/html/rfc2104
+
+[RFC5869] Krawczyk, H. & Eronen, P.
+          "HMAC-based Extract-and-Expand Key Derivation Function (HKDF)"
+          RFC 5869, May 2010
+          https://datatracker.ietf.org/doc/html/rfc5869
+
+================================================================================
+W3C STANDARDS
+================================================================================
+
+[WebAuthn] W3C Recommendation
+           "Web Authentication: An API for accessing Public Key Credentials"
+           Level 2, 8 April 2021
+           https://www.w3.org/TR/webauthn-2/
+
+[WebAuthn-3] W3C Working Draft
+             "Web Authentication: An API for accessing Public Key Credentials"
+             Level 3, Latest Draft 2024
+             https://www.w3.org/TR/webauthn-3/
+
+[Credential-Management]
+           W3C Recommendation
+           "Credential Management Level 1"
+           https://www.w3.org/TR/credential-management-1/
+
+================================================================================
+FIDO ALLIANCE SPECIFICATIONS
+================================================================================
+
+[FIDO2] FIDO Alliance
+        "FIDO2: WebAuthn & CTAP"
+        https://fidoalliance.org/fido2/
+
+[CTAP] FIDO Alliance
+       "Client to Authenticator Protocol (CTAP)"
+       https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html
+
+[UAF] FIDO Alliance
+      "Universal Authentication Framework (UAF) Protocol"
+      https://fidoalliance.org/specifications/download/
+
+================================================================================
+CRYPTOGRAPHIC STANDARDS
+================================================================================
+
+[FIPS180-4] National Institute of Standards and Technology
+            "Secure Hash Standard (SHS)"
+            FIPS PUB 180-4, August 2015
+            https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+
+[FIPS202] National Institute of Standards and Technology
+          "SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions"
+          FIPS PUB 202, August 2015
+          https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf
+
+[bcrypt] Provos, N., & Mazières, D.
+         "A Future-Adaptable Password Scheme"
+         Proceedings of USENIX Annual Technical Conference, 1999
+         https://www.usenix.org/legacy/events/usenix99/provos/provos.pdf
+
+[Argon2] Biryukov, A., Dinu, D., & Khovratovich, D.
+         "Argon2: the memory-hard function for password hashing and other applications"
+         Version 1.3, 2015
+         https://github.com/P-H-C/phc-winner-argon2/blob/master/argon2-specs.pdf
+
+================================================================================
+ACADEMIC PAPERS & RESEARCH
+================================================================================
+
+TIMING ATTACKS:
+
+[Kocher96] Kocher, P.C.
+           "Timing Attacks on Implementations of Diffie-Hellman, RSA, DSS, and Other Systems"
+           CRYPTO 1996
+           https://www.paulkocher.com/doc/TimingAttacks.pdf
+
+[Brumley03] Brumley, D., & Boneh, D.
+            "Remote Timing Attacks are Practical"
+            USENIX Security Symposium, 2003
+            https://crypto.stanford.edu/~dabo/papers/ssl-timing.pdf
+
+[AlFardan13] AlFardan, N.J., & Paterson, K.G.
+             "Lucky Thirteen: Breaking the TLS and DTLS Record Protocols"
+             IEEE Symposium on Security and Privacy, 2013
+             http://www.isg.rhul.ac.uk/tls/TLStiming.pdf
+
+PASSWORD SECURITY:
+
+[Bonneau12] Bonneau, J.
+            "The Science of Guessing: Analyzing an Anonymized Corpus of 70 Million Passwords"
+            IEEE Symposium on Security and Privacy, 2012
+            https://www.jbonneau.com/doc/B12-IEEESP-analyzing_70M_anonymized_passwords.pdf
+
+[Kelley12] Kelley, P.G., Komanduri, S., Mazurek, M.L., et al.
+           "Guess Again (and Again and Again): Measuring Password Strength by Simulating Password-Cracking Algorithms"
+           IEEE Symposium on Security and Privacy, 2012
+           https://www.ece.cmu.edu/~lbauer/papers/2012/oakland2012-passwords.pdf
+
+[Grassi17] Grassi, P.A., et al.
+           "Digital Identity Guidelines: Authentication and Lifecycle Management"
+           NIST Special Publication 800-63B, 2017
+           https://pages.nist.gov/800-63-3/sp800-63b.html
+
+PHISHING & MITM:
+
+[Dhamija06] Dhamija, R., Tygar, J.D., & Hearst, M.
+            "Why Phishing Works"
+            CHI 2006
+            https://people.eecs.berkeley.edu/~tygar/papers/Phishing/why_phishing_works.pdf
+
+[Schechter07] Schechter, S.E., Dhamija, R., Ozment, A., & Fischer, I.
+              "The Emperor's New Security Indicators"
+              IEEE Symposium on Security and Privacy, 2007
+
+[Konoth20] Konoth, R.K., van der Veen, V., & Bos, H.
+           "How Anywhere Computing Just Killed Your Phone-Based Two-Factor Authentication"
+           FC 2020
+           https://www.vusec.net/wp-content/uploads/2020/02/anywhere-fc20.pdf
+
+WEBAUTHN SECURITY:
+
+[Barbosa21] Barbosa, M., et al.
+            "Provable Security Analysis of FIDO2"
+            CRYPTO 2021
+            https://eprint.iacr.org/2021/756.pdf
+
+[Lyastani20] Lyastani, S.G., Schilling, M., Neumayr, M., Backes, M., & Bugiel, S.
+             "Is FIDO2 the Kingslayer of User Authentication? A Comparative Usability Study of FIDO2 Passwordless Authentication"
+             IEEE Symposium on Security and Privacy, 2020
+
+================================================================================
+BOOKS & TEXTBOOKS
+================================================================================
+
+[Anderson08] Anderson, R.
+             "Security Engineering: A Guide to Building Dependable Distributed Systems"
+             2nd Edition, Wiley, 2008
+             Chapters on Authentication and Cryptography
+
+[Schneier15] Schneier, B.
+             "Applied Cryptography: Protocols, Algorithms, and Source Code in C"
+             20th Anniversary Edition, Wiley, 2015
+
+[Ferguson10] Ferguson, N., Schneier, B., & Kohno, T.
+             "Cryptography Engineering: Design Principles and Practical Applications"
+             Wiley, 2010
+
+[Stallings17] Stallings, W.
+              "Cryptography and Network Security: Principles and Practice"
+              7th Edition, Pearson, 2017
+
+================================================================================
+INDUSTRY REPORTS & GUIDELINES
+================================================================================
+
+[OWASP-Auth] OWASP Foundation
+             "Authentication Cheat Sheet"
+             https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+
+[OWASP-Pass] OWASP Foundation
+             "Password Storage Cheat Sheet"
+             https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+[OWASP-MFA] OWASP Foundation
+            "Multifactor Authentication Cheat Sheet"
+            https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html
+
+[CIS-Controls] Center for Internet Security
+               "CIS Controls Version 8"
+               Control 6: Access Control Management
+               https://www.cisecurity.org/controls/
+
+[NIST-Crypto] National Institute of Standards and Technology
+              "Recommendation for Key Management"
+              NIST Special Publication 800-57, 2020
+              https://csrc.nist.gov/publications/detail/sp/800-57-part-1/rev-5/final
+
+================================================================================
+ONLINE RESOURCES & DOCUMENTATION
+================================================================================
+
+PYTHON LIBRARIES:
+
+[pyotp-docs] PyOTP Documentation
+             "Python One-Time Password Library"
+             https://pyauth.github.io/pyotp/
+
+[fido2-py] python-fido2 Documentation
+           "FIDO2/WebAuthn library for Python"
+           https://github.com/Yubico/python-fido2
+
+[bcrypt-py] bcrypt Documentation
+            "Modern password hashing for Python"
+            https://github.com/pyca/bcrypt/
+
+[argon2-py] argon2-cffi Documentation
+            "Argon2 password hashing for Python"
+            https://argon2-cffi.readthedocs.io/
+
+[qrcode-py] python-qrcode Documentation
+            "QR Code image generator"
+            https://github.com/lincolnloop/python-qrcode
+
+DEVELOPER GUIDES:
+
+[MDN-WebAuthn] Mozilla Developer Network
+               "Web Authentication API"
+               https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API
+
+[Google-2FA] Google Developers
+             "Enabling Two-Factor Authentication"
+             https://developers.google.com/identity/protocols/oauth2
+
+[Yubico-Dev] Yubico Developer Guide
+             "WebAuthn Developer Guide"
+             https://developers.yubico.com/WebAuthn/
+
+[Auth0-MFA] Auth0 Documentation
+            "Multi-factor Authentication"
+            https://auth0.com/docs/secure/multi-factor-authentication
+
+================================================================================
+SECURITY BLOGS & ARTICLES
+================================================================================
+
+[Krebs-2FA] Krebs, B.
+            "The Value of Two-Factor Authentication"
+            KrebsOnSecurity, 2020
+            https://krebsonline.com/
+
+[Troy-Hunt] Hunt, T.
+            "Everything you ever wanted to know about building a secure password reset feature"
+            Troy Hunt's Blog, 2012
+            https://www.troyhunt.com/everything-you-ever-wanted-to-know/
+
+[Google-Security] Google Security Blog
+                  "New research: How effective is basic account hygiene at preventing hijacking"
+                  2019
+                  https://security.googleblog.com/2019/05/new-research-how-effective-is-basic.html
+
+[Microsoft-MFA] Microsoft Security
+                "Your Pa$$word doesn't matter"
+                2019
+                https://techcommunity.microsoft.com/
+
+================================================================================
+TOOLS & DATASETS
+================================================================================
+
+[RockYou] RockYou Password List
+          14 million leaked passwords from 2009 breach
+          Available in security research repositories
+          (Note: Used for educational purposes only)
+
+[SecLists] SecLists Password Lists
+           "Collection of security testing lists"
+           https://github.com/danielmiessler/SecLists
+
+[HIBP] Hunt, T.
+       "Have I Been Pwned: Pwned Passwords"
+       Database of compromised passwords
+       https://haveibeenpwned.com/Passwords
+
+[Hashcat] Steube, J.
+          "hashcat - advanced password recovery"
+          https://hashcat.net/hashcat/
+
+[John] "John the Ripper Password Cracker"
+       https://www.openwall.com/john/
+
+================================================================================
+VULNERABILITY DATABASES
+================================================================================
+
+[CVE] MITRE Corporation
+      "Common Vulnerabilities and Exposures"
+      https://cve.mitre.org/
+
+[NVD] National Institute of Standards and Technology
+      "National Vulnerability Database"
+      https://nvd.nist.gov/
+
+[CWE-307] MITRE
+          "CWE-307: Improper Restriction of Excessive Authentication Attempts"
+          https://cwe.mitre.org/data/definitions/307.html
+
+[CWE-208] MITRE
+          "CWE-208: Observable Timing Discrepancy"
+          https://cwe.mitre.org/data/definitions/208.html
+
+[CWE-327] MITRE
+          "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+          https://cwe.mitre.org/data/definitions/327.html
+
+================================================================================
+COMPLIANCE & STANDARDS
+================================================================================
+
+[PCI-DSS] PCI Security Standards Council
+          "Payment Card Industry Data Security Standard (PCI DSS)"
+          Version 4.0, 2022
+          https://www.pcisecuritystandards.org/
+
+[GDPR] European Parliament and Council
+       "General Data Protection Regulation (GDPR)"
+       Regulation (EU) 2016/679
+       https://gdpr-info.eu/
+
+[HIPAA] U.S. Department of Health & Human Services
+        "Health Insurance Portability and Accountability Act (HIPAA)"
+        Security Rule
+        https://www.hhs.gov/hipaa/for-professionals/security/
+
+================================================================================
+COURSE MATERIALS
+================================================================================
+
+[Course-Notes] D7076E - Security in Computer Systems
+               Lecture Notes on Authentication & Cryptography
+               Luleå University of Technology, 2025
+
+[Lab-Manual] D7076E - Security in Computer Systems
+             Lab 3: Secure Password Storage and Multi-Factor Authentication
+             Person B Tasks Specification
+
+================================================================================
+ADDITIONAL REFERENCES
+================================================================================
+
+PYTHON SECURITY:
+
+[Python-hmac] Python Standard Library
+              "hmac — Keyed-Hashing for Message Authentication"
+              https://docs.python.org/3/library/hmac.html
+
+[Python-secrets] Python Standard Library
+                 "secrets — Generate secure random numbers for managing secrets"
+                 https://docs.python.org/3/library/secrets.html
+
+[Python-hashlib] Python Standard Library
+                 "hashlib — Secure hashes and message digests"
+                 https://docs.python.org/3/library/hashlib.html
+
+AUTHENTICATION BEST PRACTICES:
+
+[Auth-Best] CISA (Cybersecurity & Infrastructure Security Agency)
+            "Multi-Factor Authentication (MFA)"
+            https://www.cisa.gov/mfa
+
+[NIST-Auth] NIST
+            "Back to Basics: Multi-factor Authentication (MFA)"
+            https://www.nist.gov/
+
+TESTING & SECURITY:
+
+[OWASP-Testing] OWASP Foundation
+                "OWASP Testing Guide v4.2"
+                Testing for Authentication
+                https://owasp.org/www-project-web-security-testing-guide/
+
+[BurpSuite] PortSwigger
+            "Burp Suite Documentation"
+            Testing Authentication
+            https://portswigger.net/burp/documentation
+
+================================================================================
+HISTORICAL CONTEXT
+================================================================================
+
+MAJOR BREACHES & INCIDENTS:
+
+[LinkedIn-2012] LinkedIn data breach (2012)
+                6.5 million SHA-1 hashed passwords (unsalted) leaked
+                Demonstrated importance of salting
+
+[Adobe-2013] Adobe data breach (2013)
+             153 million passwords encrypted (not hashed) with same key
+             Showed weakness of encryption vs hashing for passwords
+
+[Yahoo-2013] Yahoo data breach (2013-2014)
+             3 billion accounts compromised
+             Emphasized need for MFA
+
+[Equifax-2017] Equifax data breach (2017)
+               147 million records compromised
+               Led to increased security standards
+
+TIMING ATTACK INCIDENTS:
+
+[OpenSSL-2003] OpenSSL timing vulnerability in RSA decryption
+               CVE-2003-0147
+               Demonstrated real-world timing attack feasibility
+
+[SSH-2001] Song, D., Wagner, D., & Tian, X.
+           "Timing Analysis of Keystrokes and Timing Attacks on SSH"
+           USENIX Security Symposium, 2001
+
+================================================================================
+VIDEO LECTURES & PRESENTATIONS
+================================================================================
+
+[Christof-Paar] Paar, C.
+                "Introduction to Cryptography"
+                University lecture series on YouTube
+                https://www.youtube.com/channel/UC1usFRN4LCMcfIV7UjHNuQg
+
+[Computerphile] Computerphile YouTube Channel
+                "Password Cracking", "Two Factor Authentication", "WebAuthn"
+                https://www.youtube.com/user/Computerphile
+
+[BlackHat] Black Hat Conference Presentations
+           Various talks on authentication security
+           https://www.blackhat.com/
+
+================================================================================
+CODE REPOSITORIES & EXAMPLES
+================================================================================
+
+[WebAuthn-Demo] Yubico
+                "WebAuthn Demo Server"
+                https://github.com/Yubico/python-fido2/tree/main/examples
+
+[TOTP-Impl] Various implementations
+            Google Authenticator PAM module
+            https://github.com/google/google-authenticator-libpam
+
+[Security-Examples] OWASP WebGoat
+                    "Security Training Application"
+                    https://github.com/WebGoat/WebGoat
+
+================================================================================
+STATISTICAL DATA SOURCES
+================================================================================
+
+[Verizon-DBIR] Verizon
+               "Data Breach Investigations Report"
+               Annual report on security incidents
+               https://www.verizon.com/business/resources/reports/dbir/
+
+[Ponemon] Ponemon Institute
+          "Cost of a Data Breach Report"
+          https://www.ibm.com/security/data-breach
+
+[NCSC-Stats] National Cyber Security Centre (UK)
+             "Cyber Security Breaches Survey"
+             https://www.ncsc.gov.uk/
+
+================================================================================
+LEGAL & REGULATORY
+================================================================================
+
+[CCPA] California Consumer Privacy Act
+       https://oag.ca.gov/privacy/ccpa
+
+[SOX] Sarbanes-Oxley Act
+      IT Security Requirements
+      https://www.soxlaw.com/
+
+[ISO27001] ISO/IEC 27001:2022
+           "Information security management systems"
+           https://www.iso.org/standard/27001
+
+================================================================================
+ACKNOWLEDGMENTS
+================================================================================
+
+This implementation builds upon the foundational work of:
+- IETF working groups (RFC authors)
+- W3C Web Authentication Working Group
+- FIDO Alliance
+- Password Hashing Competition organizers
+- Open source library maintainers
+- Security researchers and the infosec community
+
+Special thanks to:
+- Course instructors and TAs for Lab 3 guidance
+- PyOTP, python-fido2, bcrypt, and Argon2 library maintainers
+- OWASP Foundation for security best practices documentation
+
+================================================================================
+USAGE NOTES
+================================================================================
+
+All sources listed above were used for:
+1. Understanding theoretical concepts
+2. Implementing security protocols correctly
+3. Following industry best practices
+4. Validating implementation approaches
+5. Educational and research purposes
+
+All code is original implementation based on:
+- Standard specifications (RFCs, W3C)
+- Library documentation
+- Security best practices
+- Academic research findings
+
+No proprietary or copyrighted code was used without proper attribution.
+
+================================================================================
+DISCLAIMER
+================================================================================
+
+This work is submitted for educational purposes as part of Lab 3 in the course
+D7076E - Security in Computer Systems. All attack demonstrations are for
+learning defensive security concepts and should only be used in controlled
+environments with proper authorization.
+
+The author does not endorse or encourage malicious use of the techniques
+demonstrated. Always follow applicable laws, regulations, and ethical
+guidelines when working with security tools and techniques.
+
+================================================================================
+DOCUMENT INFORMATION
+================================================================================
+
+Document: Sources and References
+Version: 1.0
+Date: 2025-10-12
+Author: Person B
+Course: D7076E - Security in Computer Systems
+Lab: Lab 3 - Person B Tasks
+
+Total References: 100+
+Categories: 15
+Last Updated: 2025-10-12
+
+================================================================================
+END OF SOURCES
+================================================================================

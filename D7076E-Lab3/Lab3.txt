@@ -1,0 +1,26 @@
+Aim:
+
+Understand secure password storage and hashing schemes.
+Build & secure an authentication API with tamper protection and multi-factor authentication (MFA).
+Measure and demonstrate attacks (cracking, timing, relay/phishing) and implement mitigations.
+ 
+
+Tasks:
+
+Flask REST API: /register, /login, /mfa/*; store users in SQLite (username, salt, hash, MFA metadata).
+Password storage: implement SHA-256, SHA-3, bcrypt, Argon2 . Compare formats, cost parameters and brute-force resistance.
+Salt & pepper analysis: demonstrate per-user salts vs a system pepper and their impact on cracking difficulty.
+HMAC & integrity: add MAC to API responses; demonstrate naive length-extension vulnerabilities where applicable; replace with HMAC; use compare_digest() for constant-time checks.
+MFA TOTP & HOTP: enroll TOTP (pyotp + QR), implement HOTP (show counter desync), allow configurable ±0/±1 time windows, and log acceptance/failure stats.
+FIDO2 / WebAuthn: integrate python-fido2 with browser credentials.create/get() flows; store credentialId & public key; show MITM succeeds for OTP but fails for WebAuthn (origin/RP-ID binding).
+Password cracking: provide scripts for dictionary and brute-force attacks; log time-to-crack under different schemes and settings.
+Timing attacks: implement naive comparisons and micro-benchmarks to show timing leakage; demonstrate mitigation via constant-time comparison.
+MITM relay demo (local only): build a local proxy that captures creds+OTP and forwards to the real API; measure relay success and latency for TOTP/HOTP.
+ 
+
+Deliverables:
+
+Code: Flask app (password options + MFA), MITM relay, test scripts, README with run instructions.
+Artifacts: QR images, WebAuthn registration traces (credential id, public key), MITM/relay logs, timing & cracking outputs.
+Report: experiment setup; attack results (success rates, timings); salt/pepper effects; MFA comparison (HOTP vs TOTP vs FIDO2); mitigations & deployment recommendations.
+Demo evidence: screenshots or a screencapture showing TOTP relay success and WebAuthn relay failure.
