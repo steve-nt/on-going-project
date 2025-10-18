@@ -178,9 +178,6 @@ Contents:
 HOW TO RUN THE CODE
 ================================================================================
 
-
-
-
 1. Install Dependencies:
    pip install flask pyotp qrcode pillow fido2 bcrypt argon2-cffi requests
 
