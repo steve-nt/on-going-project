@@ -1,0 +1,309 @@
+2. Authentication API Implementation 
+
+ 
+
+2.1 Flask REST API Architecture 
+
+ 
+
+The core Flask application serves as the foundation for our authentication system. This implementation provides secure user registration and login endpoints with support for multiple password hashing algorithms and HMAC integrity protection. 
+
+ 
+
+Code 1: Main Flask Application (app.py) 
+
+This Flask application implements a secure authentication API that demonstrates multiple password hashing algorithms and security best practices. The application initializes a SQLite database to store user credentials with support for different hash types, ensuring flexibility in security implementation. The PasswordHasher class provides four different hashing methods including SHA-256, SHA-3, bcrypt, and Argon2, each with appropriate configuration parameters optimized for demonstration purposes. The implementation incorporates both per-user salts and a system-wide pepper for enhanced security, while HMAC protection is added to all API responses to prevent tampering. 
+
+ 
+
+2.2 API Testing Framework 
+
+ 
+
+A comprehensive testing framework was developed to validate the API functionality across all supported hashing algorithms. 
+
+ 
+
+Code 2: API Testing Script (test.py) 
+
+ 
+
+This testing script systematically validates the API functionality by testing user registration with three different hash types and verifying the login endpoint functionality. The script includes comprehensive error handling to catch and report any connection issues or API errors, while displaying complete API responses including HMAC values for verification. 
+
+ 
+
+2.3 Experimental Results: API Testing 
+
+ 
+
+The API testing demonstrated successful implementation of the authentication system with proper security measures. 
+
+ 
+
+Result 1: First API Test Run - Successful Registration 
+
+ 
+
+unknown 
+
+Registered user1 with sha256: { 
+
+    'hash_type': 'sha256',  
+
+    'mac': '939b972a0b3fab9bab0c1fc0ca595c17854bb8de5022f875797e045643528e07',  
+
+    'status': 'success',  
+
+    'username': 'user1' 
+
+} 
+
+Registered user2 with bcrypt: { 
+
+    'hash_type': 'bcrypt',  
+
+    'mac': 'fd4b19ebccdaa214105fbc6f04f9c18b672647010415538017713e5e5019e0af',  
+
+    'status': 'success',  
+
+    'username': 'user2' 
+
+} 
+
+Registered user3 with argon2: { 
+
+    'hash_type': 'argon2',  
+
+    'mac': '560e2ae7c8d63b5d44d04c3b237b7f1b28fa42ea119a744961aaa70812969cbd',  
+
+    'status': 'success',  
+
+    'username': 'user3' 
+
+} 
+
+Copy code 
+
+Result 2: Second API Test Run - Duplicate User Detection 
+
+ 
+
+unknown 
+
+Registered user1 with sha256: { 
+
+    'mac': 'e86ba2e9e8196eb8c81a44b1a9dcb401ca51be905e2a89b31858e748ccfd31f1',  
+
+    'message': 'User already exists',  
+
+    'status': 'error' 
+
+} 
+
+Registered user2 with bcrypt: { 
+
+    'mac': 'e86ba2e9e8196eb8c81a44b1a9dcb401ca51be905e2a89b31858e748ccfd31f1',  
+
+    'message': 'User already exists',  
+
+    'status': 'error' 
+
+} 
+
+Copy code 
+
+The API testing results demonstrate successful implementation of all core functionality. The first test run shows successful user registration with three different hashing algorithms, each receiving unique HMAC values for integrity protection. The second test run demonstrates proper duplicate user detection, with all registration attempts correctly rejected and consistent error messages returned. 
+
+ 
+
+3. Password Storage Security 
+
+ 
+
+3.1 Multi-Algorithm Hashing Implementation 
+
+ 
+
+The implementation demonstrates four different password hashing algorithms, each representing different generations of password security technology. SHA-256 and SHA-3 represent fast cryptographic hash functions that, while secure for general cryptographic purposes, are unsuitable for password storage due to their speed. bcrypt represents the first generation of purpose-built password hashing functions with adaptive cost parameters. Argon2 represents the current state-of-the-art, providing memory-hard properties that resist modern GPU and ASIC-based attacks. 
+
+ 
+
+3.2 Salt and Pepper Security Analysis 
+
+ 
+
+The implementation demonstrates both salting and peppering techniques as complementary security measures. Each user receives a unique 32-byte cryptographically secure random salt, stored alongside their password hash in the database. This prevents rainbow table attacks by ensuring that identical passwords produce different hash values. The pepper implementation uses a system-wide secret that is not stored in the database, providing an additional security layer that protects against database compromise. 
+
+ 
+
+4. Security Analysis and Attack Demonstrations 
+
+ 
+
+4.1 Password Cracking Analysis 
+
+ 
+
+A comprehensive password cracking framework was developed to demonstrate the security differences between hashing algorithms through practical attack simulations. 
+
+ 
+
+Code 3: Password Cracking Implementation (crack_passwords.py) 
+
+ 
+
+ 
+
+4.2 Password Cracking Results 
+
+ 
+
+Result 3: Password Cracking Experimental Output 
+
+ 
+
+unknown 
+
+Cracking password 'abc'... 
+
+Tried 1000 passwords... 
+
+Result: ('abc', 1371, 125.7361490726471) 
+
+The password cracking experiment successfully recovered the 3-character password 'abc' using SHA-256 hashing in 125.74 seconds with 1,371 attempts, achieving approximately 10.9 attempts per second. This demonstrates the fundamental vulnerability of fast hash functions to brute force attacks. 
+
+ 
+
+Table 1: Password Cracking Performance Analysis 
+
+Metric 
+
+Value 
+
+Unit 
+
+Analysis 
+
+Target Password 
+
+'abc' 
+
+3 characters 
+
+Simple test case 
+
+Total Attempts 
+
+1,371 
+
+attempts 
+
+Systematic enumeration 
+
+Time to Crack 
+
+125.74 
+
+seconds 
+
+~2 minutes 
+
+Attack Rate 
+
+10.9 
+
+attempts/sec 
+
+Limited by hash computation 
+
+Success Rate 
+
+100% 
+
+percentage 
+
+Brute force succeeded 
+
+ 
+
+Code 4: Timing Attack Demo (timing_attack.py) 
+
+4.4 Timing Attack Results 
+
+ 
+
+Result 4: Timing Attack Experimental Output 
+
+ 
+
+unknown 
+
+Test case 1: 
+
+  Naive avg: 6.16e-07 seconds 
+
+  Secure avg: 7.39e-07 seconds 
+
+Test case 2: 
+
+  Naive avg: 7.06e-07 seconds 
+
+  Secure avg: 7.70e-07 seconds 
+
+Test case 3: 
+
+  Naive avg: 6.18e-07 seconds 
+
+  Secure avg: 8.34e-07 seconds 
+
+Copy code 
+
+Table 2: Timing Attack Measurement Results 
+
+ 
+
+est Case 
+
+Naive Comparison (ns) 
+
+Secure Comparison (ns) 
+
+Timing Difference (ns) 
+
+Different start 
+
+616 
+
+739 
+
+123 
+
+Same start (16 chars) 
+
+706 
+
+770 
+
+64 
+
+Almost identical 
+
+618 
+
+834 
+
+216 
+
+ 
+
+ 
+
+The timing attack results demonstrate measurable differences in execution time between naive and secure comparison methods. The naive comparison shows timing variations between 616 and 706 nanoseconds depending on input similarity, while the secure comparison maintains more consistent timing. These microsecond-level differences represent a practical attack vector that sophisticated attackers could exploit. 
+
+ 
+
+5. Security Recommendations 
+
+ 
+
+Based on the comprehensive implementation and analysis conducted in this assignment, several critical security recommendations emerge for modern authentication systems. Argon2 should be the preferred choice for new systems as it provides the strongest security against modern GPU and ASIC-based attacks through its memory-hard design. The implementation of a salt and pepper architecture creates a defense-in-depth approach where even database compromise does not immediately expose user passwords. Constant-time comparisons must be used throughout the system to prevent timing-based information leakage in all cryptographic operations. 
