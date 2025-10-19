@@ -48,7 +48,7 @@ def init_db():
     conn.close()
 
 class PasswordHasher:
-    """Password hashing from Person A"""
+    
     def hash_sha256(self, password, salt, rounds=100):
         hash_input = password.encode() + salt + PEPPER
         for _ in range(rounds):
@@ -70,7 +70,7 @@ class PasswordHasher:
 hasher = PasswordHasher()
 
 def add_hmac(response):
-    """Add HMAC from Person A"""
+
     mac = hmac.new(b'secret_key', str(response).encode(), hashlib.sha256).hexdigest()
     response['mac'] = mac
     return response

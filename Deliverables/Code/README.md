@@ -14,8 +14,6 @@ This project implements a comprehensive authentication security system demonstra
 7. [API Endpoints](#api-endpoints)
 8. [Security Demonstrations](#security-demonstrations)
 9. [Artifacts](#artifacts)
-10. [Dependencies](#dependencies)
-11. [Troubleshooting](#troubleshooting)
 
 ---
 

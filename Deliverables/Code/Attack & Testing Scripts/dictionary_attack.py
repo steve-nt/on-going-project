@@ -1,6 +1,5 @@
 """
-Dictionary and Brute-Force Password Attack Implementation
-Person B - Attack Scripts Component
+Dictionary and Brute-Force Password Attack 
 """
 
 import hashlib
