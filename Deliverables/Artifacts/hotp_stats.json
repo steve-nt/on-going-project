@@ -1,0 +1,56 @@
+{
+  "total_attempts": 6,
+  "successful": 6,
+  "failed": 0,
+  "desync_events": 1,
+  "verification_history": [
+    {
+      "timestamp": "2025-10-19T14:24:54.112099",
+      "username": "hotp_testuser",
+      "counter_before": 0,
+      "counter_after": 1,
+      "verified": true,
+      "desync_detected": false
+    },
+    {
+      "timestamp": "2025-10-19T14:24:54.112347",
+      "username": "hotp_testuser",
+      "counter_before": 1,
+      "counter_after": 2,
+      "verified": true,
+      "desync_detected": false
+    },
+    {
+      "timestamp": "2025-10-19T14:24:54.112590",
+      "username": "hotp_testuser",
+      "counter_before": 2,
+      "counter_after": 3,
+      "verified": true,
+      "desync_detected": false
+    },
+    {
+      "timestamp": "2025-10-19T14:24:54.131698",
+      "username": "hotp_testuser",
+      "counter_before": 3,
+      "counter_after": 7,
+      "verified": true,
+      "desync_detected": true
+    },
+    {
+      "timestamp": "2025-10-19T14:24:54.132395",
+      "username": "hotp_testuser",
+      "counter_before": 7,
+      "counter_after": 8,
+      "verified": true,
+      "desync_detected": false
+    },
+    {
+      "timestamp": "2025-10-19T14:24:54.133138",
+      "username": "hotp_testuser",
+      "counter_before": 8,
+      "counter_after": 9,
+      "verified": true,
+      "desync_detected": false
+    }
+  ]
+}

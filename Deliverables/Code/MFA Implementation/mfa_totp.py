@@ -161,7 +161,7 @@ if __name__ == "__main__":
     manager = TOTPManager()
     
     # Enroll a test user
-    username = "testuser"
+    username = "testuser1"
     secret = manager.generate_secret()
     
     print(f"1. User Enrollment")

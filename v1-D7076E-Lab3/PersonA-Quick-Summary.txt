@@ -1,0 +1,108 @@
+================================================================================
+                    PersonA FILES - QUICK SUMMARY
+================================================================================
+
+┌──────────────────────────┬───────────────────────────────────────────────┐
+│ FILE                     │ LAB3 OBJECTIVES COVERED                       │
+├──────────────────────────┼───────────────────────────────────────────────┤
+│ PersonA-app.py           │ ✓ Task 1: Flask REST API (/register, /login) │
+│ (97 lines)               │ ✓ Task 2: 4 Hash Algorithms (SHA-256, SHA-3, │
+│                          │           bcrypt, Argon2)                     │
+│                          │ ✓ Task 3: Salt & Pepper implementation        │
+│                          │ ✓ Task 4: HMAC integrity protection           │
+│                          │ ✓ SQLite database with users table            │
+│                          │ ✓ Configurable cost parameters                │
+├──────────────────────────┼───────────────────────────────────────────────┤
+│ PersonA-crack_passwords  │ ✓ Task 7: Password Cracking (brute force)     │
+│ (42 lines)               │ ✓ Demonstrates cracking difficulty            │
+│                          │ ✓ Logs time-to-crack and attempts             │
+│                          │ ✓ Target: "abc" password with 100K iterations │
+├──────────────────────────┼───────────────────────────────────────────────┤
+│ PersonA-timing_attack    │ ✓ Task 8: Timing Side-Channel demonstration   │
+│ (46 lines)               │ ✓ Naive comparison (vulnerable)               │
+│                          │ ✓ Secure comparison (hmac.compare_digest)     │
+│                          │ ✓ Micro-benchmarks showing timing leakage     │
+│                          │ ✓ Constant-time mitigation proof              │
+├──────────────────────────┼───────────────────────────────────────────────┤
+│ PersonA-testing.py       │ • Testing/validation tool (not required)      │
+│ (25 lines)               │ • Tests all 4 hash algorithms                 │
+│                          │ • Validates API functionality                 │
+└──────────────────────────┴───────────────────────────────────────────────┘
+
+COVERAGE SUMMARY:
+-----------------
+PersonA implements 5 of 9 main tasks:
+  ✓ Task 1: Flask API with /register and /login
+  ✓ Task 2: 4 password hashing algorithms
+  ✓ Task 3: Salt & pepper analysis
+  ✓ Task 4: HMAC integrity + constant-time comparison
+  ✓ Task 7: Password cracking (brute force part)
+  ✓ Task 8: Timing attacks and mitigation
+
+PersonB handles:
+  • Task 5: MFA (TOTP & HOTP)
+  • Task 6: FIDO2/WebAuthn
+  • Task 7: Dictionary attacks
+  • Task 9: MITM relay
+
+KEY IMPLEMENTATIONS:
+--------------------
+
+1. PASSWORD HASHING (PersonA-app.py):
+   • SHA-256 with 100 rounds       (line 24-28)
+   • SHA-3 with 100 rounds         (line 30-34)
+   • bcrypt with 8 rounds          (line 36-38)
+   • Argon2 with time=1, mem=8192  (line 39-41)
+
+2. SALT & PEPPER (PersonA-app.py):
+   • System pepper: line 10 (not stored in DB)
+   • Per-user salt: line 59 (32 bytes, stored)
+   • Combined: line 25-26, 31-32
+
+3. HMAC INTEGRITY (PersonA-app.py):
+   • Implementation: line 45-48
+   • Applied to responses: line 88, 93
+   • Uses HMAC-SHA256
+
+4. TIMING ATTACK (PersonA-timing_attack.py):
+   • Naive comparison: line 5-7 (vulnerable)
+   • Secure comparison: line 9-11 (safe)
+   • Micro-benchmark: line 13-43
+
+5. CRACKING (PersonA-crack_passwords.py):
+   • Brute force: line 6-29
+   • Character set: a-z + 0-9 (36 chars)
+   • Target: "abc" with 100K SHA-256 iterations
+
+SECURITY FEATURES:
+------------------
+✓ Configurable hash algorithms
+✓ Adjustable cost parameters
+✓ Per-user random salt (32 bytes)
+✓ System-wide pepper (secret)
+✓ HMAC on all API responses
+✓ Constant-time comparison
+✓ SQLite with proper schema
+✓ Error handling
+
+FOR REPORT:
+-----------
+Use PersonA files to demonstrate:
+  • Password storage comparison (4 algorithms)
+  • Salt & pepper effectiveness
+  • HMAC integrity protection
+  • Timing attack vulnerability and mitigation
+  • Brute force attack complexity
+  • Cost parameter trade-offs
+
+DELIVERABLES:
+-------------
+✓ Code: Flask app (PersonA-app.py)
+✓ Code: Attack scripts (crack, timing)
+✓ Artifacts: Timing measurements
+✓ Artifacts: Cracking results
+✓ Report: Algorithm comparison
+✓ Report: Salt/pepper analysis
+✓ Report: Timing mitigation
+
+================================================================================

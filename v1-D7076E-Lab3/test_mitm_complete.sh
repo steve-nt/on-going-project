@@ -55,12 +55,7 @@ echo "============================================"
 
 if [ -n "$TOTP_SECRET" ]; then
     # Generate TOTP token using Python
-    TOTP_TOKEN=$(python3 << EOF
-import pyotp
-totp = pyotp.TOTP('$TOTP_SECRET')
-print(totp.now())
-EOF
-)
+    TOTP_TOKEN=$(python3 -c "import pyotp; print(pyotp.TOTP('$TOTP_SECRET').now())")
     
     echo "Generated TOTP Token: $TOTP_TOKEN"
     echo ""

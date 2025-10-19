@@ -112,15 +112,11 @@ curl -X POST http://localhost:8080/login \
 # -------------------------------------------------------
 
 # First, generate a TOTP token using the secret from Step 2:
-python3 << 'EOF'
-import pyotp
+python3 -c "import pyotp; print('Current token:', pyotp.TOTP('YOUR_SECRET_HERE').now())"
 # Replace 'YOUR_SECRET_HERE' with the actual secret from Step 2
-totp = pyotp.TOTP('YOUR_SECRET_HERE')
-print(f"Current TOTP token: {totp.now()}")
-EOF
 
 # Example output:
-# Current TOTP token: 123456
+# Current token: 123456
 
 # Now send the token through the MITM proxy:
 # Replace 123456 with the actual token you just generated
@@ -246,13 +242,9 @@ curl -X POST http://localhost:8080/login \
   -d '{"username":"testuser","password":"password123"}'
 
 # Step 4: Generate token
-python3 << 'EOF'
-import pyotp
-totp = pyotp.TOTP('2ZLLDIBARF3SLB77KGNRIMXONJM4B3CG')
-print(f"Current TOTP token: {totp.now()}")
-EOF
+python3 -c "import pyotp; print('Current token:', pyotp.TOTP('2ZLLDIBARF3SLB77KGNRIMXONJM4B3CG').now())"
 
-# Outputs: Current TOTP token: 533218
+# Outputs: Current token: 533218
 
 # Step 5: Send token
 curl -X POST http://localhost:8080/mfa/verify \

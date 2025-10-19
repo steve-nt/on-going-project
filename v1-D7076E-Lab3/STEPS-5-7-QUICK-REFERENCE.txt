@@ -1,0 +1,152 @@
+================================================================================
+                    STEPS 5-7 QUICK COMMAND REFERENCE
+              Timing Attack, MFA Stats, and Database Capture
+================================================================================
+
+STEP 5: TIMING ATTACK DATA
+================================================================================
+
+Command:
+  python3 PersonA-timing_attack.py > timing_attack_results.txt
+
+What it shows:
+  • Naive comparison (vulnerable) - timing varies with matching chars
+  • Secure comparison (hmac.compare_digest) - constant time
+  • Proves timing side-channel vulnerability
+
+Key finding:
+  → Use hmac.compare_digest() for password/hash comparison
+  → Prevents attackers from guessing passwords character-by-character
+
+
+STEP 6: MFA STATISTICS
+================================================================================
+
+Generate stats by running MFA tests through integrated app:
+
+Terminal 1:
+  python3 PersonB-integrated_app.py
+
+Terminal 2:
+  # Register user
+  curl -X POST http://localhost:5000/register \
+    -H "Content-Type: application/json" \
+    -d '{"username":"testuser","password":"pass123","hash_type":"bcrypt"}'
+  
+  # Enroll TOTP
+  curl -X POST http://localhost:5000/mfa/enroll/totp \
+    -H "Content-Type: application/json" \
+    -d '{"username":"testuser"}'
+  # Save the secret!
+  
+  # Generate token
+  python3 -c "import pyotp; print(pyotp.TOTP('SECRET_HERE').now())"
+  
+  # Verify token (repeat multiple times)
+  curl -X POST http://localhost:5000/mfa/verify \
+    -H "Content-Type: application/json" \
+    -d '{"username":"testuser","token":"TOKEN_HERE"}'
+
+Generated files:
+  ✓ totp_stats.json
+
+View stats:
+  cat totp_stats.json | python3 -m json.tool
+
+Key metrics:
+  • total_attempts - how many verification attempts
+  • successful - how many succeeded
+  • failed - how many failed
+  • time_window_used - shows if tokens validated within time window
+
+Success rate calculation:
+  cat totp_stats.json | python3 -c "
+  import json, sys
+  d = json.load(sys.stdin)
+  rate = d['successful'] / d['total_attempts'] * 100
+  print(f'Success rate: {rate:.1f}%')
+  "
+
+
+STEP 7: DATABASE CAPTURE
+================================================================================
+
+Backup database:
+  cp users.db artifacts_users.db
+
+View schema:
+  sqlite3 users.db ".schema"
+
+View users:
+  sqlite3 users.db "SELECT username, hash_type, mfa_enabled, mfa_type FROM users;"
+
+Count by hash algorithm:
+  sqlite3 users.db "SELECT hash_type, COUNT(*) FROM users GROUP BY hash_type;"
+
+MFA statistics:
+  sqlite3 users.db "
+  SELECT 
+    COUNT(*) as total,
+    SUM(CASE WHEN mfa_enabled=1 THEN 1 ELSE 0 END) as with_mfa
+  FROM users;
+  "
+
+View MFA logs:
+  sqlite3 users.db "SELECT * FROM mfa_logs ORDER BY timestamp DESC LIMIT 10;"
+
+MFA success rate:
+  sqlite3 users.db "
+  SELECT 
+    COUNT(*) as attempts,
+    SUM(success) as successful,
+    ROUND(SUM(success)*100.0/COUNT(*), 2) as success_pct
+  FROM mfa_logs;
+  "
+
+Export to CSV:
+  sqlite3 users.db -csv -header "SELECT * FROM users;" > users.csv
+  sqlite3 users.db -csv -header "SELECT * FROM mfa_logs;" > mfa_logs.csv
+
+
+COMPLETE CHECKLIST
+================================================================================
+
+Step 5:
+  [ ] Run: python3 PersonA-timing_attack.py > timing_attack_results.txt
+  [ ] Verify: timing_attack_results.txt shows naive vs secure comparison
+  [ ] Observe: Naive times vary, secure times are constant
+
+Step 6:
+  [ ] Run MFA tests through integrated app (see commands above)
+  [ ] Verify: totp_stats.json exists
+  [ ] Check: Success rate > 80%
+  [ ] Inspect: time_window_used shows verification patterns
+
+Step 7:
+  [ ] Run: cp users.db artifacts_users.db
+  [ ] Verify: artifacts_users.db created
+  [ ] Check users: sqlite3 users.db "SELECT COUNT(*) FROM users;"
+  [ ] Check MFA: sqlite3 users.db "SELECT COUNT(*) FROM mfa_logs;"
+  [ ] Export optional CSVs for easy viewing
+
+
+FOR YOUR REPORT
+================================================================================
+
+Step 5 - Timing Attacks:
+  → Show timing_attack_results.txt output
+  → Explain naive comparison vulnerability
+  → Demonstrate constant-time comparison mitigation
+
+Step 6 - MFA Effectiveness:
+  → Report TOTP success rate
+  → Discuss time window trade-offs (0 vs 1 vs 2)
+  → Compare TOTP usability vs security
+
+Step 7 - Implementation Evidence:
+  → Show database schema with salt, hash, MFA columns
+  → Display hash algorithm distribution
+  → Prove MFA enrollment and verification logging
+
+
+================================================================================

@@ -223,7 +223,7 @@ class PasswordCracker:
         
         return results
     
-    def generate_report(self, filename='cracking_report.txt'):
+    def generate_report(self, filename='dictionary_attack_report.txt'):
         """Generate detailed cracking report"""
         with open(filename, 'w') as f:
             f.write("=" * 80 + "\n")

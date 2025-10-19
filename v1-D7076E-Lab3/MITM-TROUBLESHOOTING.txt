@@ -101,11 +101,8 @@ Check Terminal 2: Should show "[MITM] Captured credentials"
 Step 4 - Generate TOTP token and verify through proxy:
 
 First, generate a valid TOTP token using the secret from Step 2:
-python3 << 'EOF'
-import pyotp
-totp = pyotp.TOTP('YOUR_SECRET_HERE')  # Replace with actual secret
-print(f"Current TOTP token: {totp.now()}")
-EOF
+python3 -c "import pyotp; print('Current token:', pyotp.TOTP('YOUR_SECRET_HERE').now())"
+# Replace 'YOUR_SECRET_HERE' with actual secret
 
 Then send it through the proxy:
 curl -X POST http://localhost:8080/mfa/verify \
