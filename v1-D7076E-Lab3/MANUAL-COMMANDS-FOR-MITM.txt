@@ -1,0 +1,406 @@
+================================================================================
+              MANUAL COMMANDS TO GENERATE CORRECT mitm_logs.json
+================================================================================
+
+PREREQUISITE - FRESH START
+================================================================================
+
+# Stop any old servers
+pkill -f "PersonB-integrated_app.py"
+pkill -f "PersonB-mitm_proxy.py"
+
+# Clean up old data (optional - for fresh test)
+rm -f users.db mitm_logs.json
+
+# Verify ports are free
+lsof -i :5000
+lsof -i :8080
+# (Should return nothing if ports are free)
+
+
+TERMINAL 1 - START INTEGRATED SERVER
+================================================================================
+
+cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+python3 PersonB-integrated_app.py
+
+# Expected output:
+# === Integrated Authentication API with MFA ===
+# Starting server on port 5000...
+# * Running on http://127.0.0.1:5000
+
+# Leave this terminal running
+
+
+TERMINAL 2 - START MITM PROXY
+================================================================================
+
+cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+python3 PersonB-mitm_proxy.py
+
+# Expected output:
+# === MITM Relay Proxy Demonstration ===
+# ...
+# Proxy running on: http://localhost:8080
+# Target server: http://localhost:5000
+# Ready to capture and relay traffic...
+
+# Leave this terminal running
+
+
+TERMINAL 3 - EXECUTE MANUAL COMMANDS
+================================================================================
+
+cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+
+# STEP 1: Register a test user through the MITM proxy
+# -------------------------------------------------------
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123","hash_type":"bcrypt"}'
+
+# Expected response:
+# {
+#   "status": "success",
+#   "username": "testuser",
+#   "hash_type": "bcrypt",
+#   "mac": "..."
+# }
+
+
+# STEP 2: Enroll user for TOTP MFA through the proxy
+# -------------------------------------------------------
+curl -X POST http://localhost:8080/mfa/enroll/totp \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser"}'
+
+# Expected response:
+# {
+#   "status": "success",
+#   "mfa_type": "totp",
+#   "secret": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+#   "provisioning_uri": "otpauth://totp/...",
+#   "mac": "..."
+# }
+
+# IMPORTANT: Copy the "secret" value from the response!
+# You'll need it in the next steps.
+
+
+# STEP 3: Login through the proxy (captures credentials)
+# -------------------------------------------------------
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123"}'
+
+# Expected response:
+# {
+#   "status": "mfa_required",
+#   "mfa_type": "totp",
+#   "session_token": "...",
+#   "mac": "..."
+# }
+
+# Check Terminal 2 - Should see:
+# [MITM] Captured credentials:
+#   Username: testuser
+#   Password: password123
+#   Relay: SUCCESS
+
+
+# STEP 4: Generate TOTP token and send through proxy (captures OTP)
+# -------------------------------------------------------
+
+# First, generate a TOTP token using the secret from Step 2:
+python3 << 'EOF'
+import pyotp
+# Replace 'YOUR_SECRET_HERE' with the actual secret from Step 2
+totp = pyotp.TOTP('YOUR_SECRET_HERE')
+print(f"Current TOTP token: {totp.now()}")
+EOF
+
+# Example output:
+# Current TOTP token: 123456
+
+# Now send the token through the MITM proxy:
+# Replace 123456 with the actual token you just generated
+curl -X POST http://localhost:8080/mfa/verify \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","token":"123456"}'
+
+# Expected response:
+# {
+#   "status": "success",
+#   "message": "TOTP verified",
+#   "mac": "..."
+# }
+
+# Check Terminal 2 - Should see:
+# [MITM] Captured OTP:
+#   Username: testuser
+#   OTP/Token: 123456
+#   Type: TOTP
+#   Relay: SUCCESS
+#   [!] OTP RELAY ATTACK SUCCESSFUL - OTP was captured and forwarded!
+
+
+# STEP 5: View captured data
+# -------------------------------------------------------
+curl http://localhost:8080/proxy/captured
+
+# Expected output:
+# {
+#   "credentials": [
+#     {
+#       "timestamp": "...",
+#       "username": "testuser",
+#       "password": "password123",
+#       "captured_from": "127.0.0.1"
+#     }
+#   ],
+#   "otp": [
+#     {
+#       "timestamp": "...",
+#       "username": "testuser",
+#       "otp": "123456",
+#       "otp_type": "TOTP",
+#       "captured_from": "127.0.0.1"
+#     }
+#   ]
+# }
+
+
+# STEP 6: View proxy statistics
+# -------------------------------------------------------
+curl http://localhost:8080/proxy/stats
+
+# Expected output:
+# {
+#   "total_relays": 4,
+#   "successful": 4,
+#   "failed": 0,
+#   "success_rate": "100.00%",
+#   "average_latency_ms": "XX.XX",
+#   "credentials_captured": 1,
+#   "otp_captured": 1,
+#   "otp_relay_attempts": 1,
+#   "otp_relay_success": 1,
+#   "webauthn_relay_attempts": 0,
+#   "webauthn_relay_success": 0
+# }
+
+
+# STEP 7: Save logs to mitm_logs.json file
+# -------------------------------------------------------
+curl -X POST http://localhost:8080/proxy/save
+
+# Expected response:
+# {
+#   "status": "success",
+#   "message": "Logs saved to mitm_logs.json"
+# }
+
+
+# STEP 8: Verify the generated file
+# -------------------------------------------------------
+ls -lh mitm_logs.json
+
+# Should show file exists (around 1-2 KB)
+
+# View the contents:
+cat mitm_logs.json | python3 -m json.tool
+
+# Or view summary:
+cat mitm_logs.json | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print('✓ Valid JSON')
+print(f'Total relays: {d[\"statistics\"][\"total_relays\"]}')
+print(f'Credentials captured: {d[\"statistics\"][\"credentials_captured\"]}')
+print(f'OTP captured: {d[\"statistics\"][\"otp_captured\"]}')
+print(f'Success rate: {d[\"statistics\"][\"success_rate\"]}')
+"
+
+
+================================================================================
+                    COMPLETE EXAMPLE WITH ACTUAL VALUES
+================================================================================
+
+Here's a complete example with actual secret and token values:
+
+# Step 1: Register
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123","hash_type":"bcrypt"}'
+
+# Step 2: Enroll TOTP
+curl -X POST http://localhost:8080/mfa/enroll/totp \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser"}'
+
+# Response shows secret: "2ZLLDIBARF3SLB77KGNRIMXONJM4B3CG"
+
+# Step 3: Login
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123"}'
+
+# Step 4: Generate token
+python3 << 'EOF'
+import pyotp
+totp = pyotp.TOTP('2ZLLDIBARF3SLB77KGNRIMXONJM4B3CG')
+print(f"Current TOTP token: {totp.now()}")
+EOF
+
+# Outputs: Current TOTP token: 533218
+
+# Step 5: Send token
+curl -X POST http://localhost:8080/mfa/verify \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","token":"533218"}'
+
+# Step 6: Save logs
+curl -X POST http://localhost:8080/proxy/save
+
+# Done! mitm_logs.json is created.
+
+
+================================================================================
+                    EXPECTED MITM_LOGS.JSON STRUCTURE
+================================================================================
+
+After completing all steps, mitm_logs.json should contain:
+
+{
+  "statistics": {
+    "total_relays": 4,
+    "successful": 4,
+    "failed": 0,
+    "success_rate": "100.00%",
+    "average_latency_ms": "XX.XX",
+    "credentials_captured": 1,
+    "otp_captured": 1,
+    "otp_relay_attempts": 1,
+    "otp_relay_success": 1,
+    "webauthn_relay_attempts": 0,
+    "webauthn_relay_success": 0
+  },
+  "captured_credentials": [
+    {
+      "timestamp": "2025-10-19T...",
+      "username": "testuser",
+      "password": "password123",
+      "captured_from": "127.0.0.1"
+    }
+  ],
+  "captured_otp": [
+    {
+      "timestamp": "2025-10-19T...",
+      "username": "testuser",
+      "otp": "123456",
+      "otp_type": "TOTP",
+      "captured_from": "127.0.0.1"
+    }
+  ],
+  "relay_logs": [
+    {
+      "timestamp": "2025-10-19T...",
+      "endpoint": "/register",
+      "success": true,
+      "latency_ms": XX.XX,
+      "relay_type": "generic",
+      "error": null
+    },
+    {
+      "timestamp": "2025-10-19T...",
+      "endpoint": "/mfa/enroll/totp",
+      "success": true,
+      "latency_ms": XX.XX,
+      "relay_type": "generic",
+      "error": null
+    },
+    {
+      "timestamp": "2025-10-19T...",
+      "endpoint": "/login",
+      "success": true,
+      "latency_ms": XX.XX,
+      "relay_type": "credential_capture",
+      "error": null
+    },
+    {
+      "timestamp": "2025-10-19T...",
+      "endpoint": "/mfa/verify",
+      "success": true,
+      "latency_ms": XX.XX,
+      "relay_type": "otp_relay",
+      "error": null
+    }
+  ]
+}
+
+
+================================================================================
+                    VERIFICATION CHECKLIST
+================================================================================
+
+✓ File mitm_logs.json exists
+✓ File is valid JSON
+✓ statistics.total_relays = 4
+✓ statistics.credentials_captured = 1
+✓ statistics.otp_captured = 1
+✓ statistics.otp_relay_success = 1
+✓ statistics.success_rate = "100.00%"
+✓ captured_credentials array has 1 entry
+✓ captured_otp array has 1 entry
+✓ relay_logs array has 4 entries
+✓ relay_logs contains: /register, /mfa/enroll/totp, /login, /mfa/verify
+
+
+================================================================================
+                    TROUBLESHOOTING
+================================================================================
+
+PROBLEM: "Connection refused" error
+SOLUTION: Ensure both servers are running (check terminals 1 & 2)
+          Use port 8080 for proxy, NOT 5001
+
+PROBLEM: "404 Not Found" on /mfa/enroll/totp
+SOLUTION: Use updated PersonB-mitm_proxy.py with fixes applied
+          Restart the proxy server
+
+PROBLEM: "Invalid TOTP token" error
+SOLUTION: Generate token immediately before sending (30-second window)
+          Use correct secret from Step 2 enrollment response
+
+PROBLEM: Empty captured_credentials or captured_otp arrays
+SOLUTION: Send requests THROUGH proxy (port 8080), not direct to app (5000)
+          Verify: curl http://localhost:8080/proxy/captured
+
+PROBLEM: Old data in mitm_logs.json
+SOLUTION: Delete file and restart proxy:
+          rm mitm_logs.json
+          pkill -f mitm_proxy
+          python3 PersonB-mitm_proxy.py
+
+
+================================================================================
+                    ALTERNATIVE: USE AUTOMATED SCRIPT
+================================================================================
+
+Instead of manual commands, you can use the automated test script:
+
+./test_mitm_complete.sh
+
+This script automatically:
+1. Registers a user through proxy
+2. Enrolls TOTP MFA
+3. Logs in (captures credentials)
+4. Generates and sends TOTP token (captures OTP)
+5. Saves logs to mitm_logs.json
+
+Much easier than manual commands!
+
+
+================================================================================
+                         END OF MANUAL COMMANDS
+================================================================================

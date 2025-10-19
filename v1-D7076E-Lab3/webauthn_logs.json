@@ -1,0 +1,11 @@
+{
+  "registration": [
+    {
+      "timestamp": "2025-10-19T09:16:14.515084",
+      "username": "webauthn_testuser",
+      "event": "registration_begin",
+      "challenge": "bddb11fdc90621344b2f32fce7cc00f187f5283cd48ac7497aa6dbd00c9deba7"
+    }
+  ],
+  "authentication": []
+}

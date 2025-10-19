@@ -1,0 +1,378 @@
+================================================================================
+                  MITM PROXY TROUBLESHOOTING GUIDE
+                Step 3: Generate MITM/Relay Logs - DETAILED
+================================================================================
+
+ISSUES IDENTIFIED AND FIXED:
+----------------------------
+
+1. PORT MISMATCH
+   Problem: DELIVERABLES-GUIDE.txt said port 8080, but code used 5001
+   Fix: Updated PersonB-mitm_proxy.py to use port 8080 by default
+   
+2. PARAMETER NAME MISMATCH  
+   Problem: Integrated app expects 'token', MITM proxy captured 'otp'
+   Fix: Updated MITM proxy to handle both 'token' and 'otp' parameter names
+   
+3. MISSING PROXY ROUTES
+   Problem: MITM proxy didn't have /mfa/enroll/totp endpoint
+   Fix: Added proxy route for /mfa/enroll/totp and /mfa/stats
+   
+4. NO EASY WAY TO SAVE LOGS
+   Problem: Logs only saved on KeyboardInterrupt
+   Fix: Added /proxy/save endpoint to save logs on demand
+
+================================================================================
+                         CORRECT PROCEDURE
+================================================================================
+
+PREREQUISITE - Ensure Required Packages:
+---------------------------------------
+pip install --break-system-packages flask bcrypt argon2-cffi pyotp requests
+
+Or without --break-system-packages:
+pip install flask bcrypt argon2-cffi pyotp requests
+
+
+TERMINAL 1 - Start the Integrated Server:
+-----------------------------------------
+cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+python3 PersonB-integrated_app.py
+
+Expected output:
+=== Integrated Authentication API with MFA ===
+Starting server on port 5000...
+ * Running on http://127.0.0.1:5000
+
+Verify it's running:
+curl http://localhost:5000/mfa/stats
+
+
+TERMINAL 2 - Start the MITM Proxy:
+----------------------------------
+cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+python3 PersonB-mitm_proxy.py
+
+Expected output:
+=== MITM Relay Proxy Demonstration ===
+...
+Proxy running on: http://localhost:8080
+Target server: http://localhost:5000
+Ready to capture and relay traffic...
+
+Verify it's running:
+curl http://localhost:8080/proxy/stats
+
+
+TERMINAL 3 - Execute Test Requests:
+-----------------------------------
+
+METHOD 1: Use the automated test script
+   ./test_mitm_complete.sh
+
+METHOD 2: Manual testing (step by step):
+
+Step 1 - Register user through proxy:
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123","hash_type":"bcrypt"}'
+
+Expected: {"status": "success", "username": "testuser", ...}
+
+
+Step 2 - Enroll TOTP MFA through proxy:
+curl -X POST http://localhost:8080/mfa/enroll/totp \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser"}'
+
+Expected: {"status": "success", "mfa_type": "totp", "secret": "...", ...}
+IMPORTANT: Copy the "secret" value for next step!
+
+
+Step 3 - Login through proxy (captures credentials):
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123"}'
+
+Expected: {"status": "mfa_required", "mfa_type": "totp", ...}
+Check Terminal 2: Should show "[MITM] Captured credentials"
+
+
+Step 4 - Generate TOTP token and verify through proxy:
+
+First, generate a valid TOTP token using the secret from Step 2:
+python3 << 'EOF'
+import pyotp
+totp = pyotp.TOTP('YOUR_SECRET_HERE')  # Replace with actual secret
+print(f"Current TOTP token: {totp.now()}")
+EOF
+
+Then send it through the proxy:
+curl -X POST http://localhost:8080/mfa/verify \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","token":"123456"}'
+
+Replace 123456 with the actual generated token.
+
+Expected: {"status": "success", "message": "TOTP verified", ...}
+Check Terminal 2: Should show "[MITM] Captured OTP" and "OTP RELAY ATTACK SUCCESSFUL"
+
+
+Step 5 - View captured data:
+curl http://localhost:8080/proxy/captured
+
+Expected: JSON with captured credentials and OTP tokens
+
+
+Step 6 - View proxy statistics:
+curl http://localhost:8080/proxy/stats
+
+Expected: JSON with relay statistics
+
+
+Step 7 - Save logs to file:
+curl -X POST http://localhost:8080/proxy/save
+
+Expected: {"status": "success", "message": "Logs saved to mitm_logs.json"}
+
+
+Step 8 - Verify the generated file:
+cat mitm_logs.json | python3 -m json.tool
+
+Expected: Complete JSON with statistics, captured_credentials, captured_otp, relay_logs
+
+
+================================================================================
+                    GENERATED FILES VERIFICATION
+================================================================================
+
+After successful execution, you should have:
+
+✓ mitm_logs.json - Complete MITM capture logs
+  Contains:
+  - statistics (total relays, success rate, latencies)
+  - captured_credentials (usernames and passwords)
+  - captured_otp (OTP tokens)
+  - relay_logs (detailed relay attempts)
+
+Check file exists:
+ls -lh mitm_logs.json
+
+View summary:
+cat mitm_logs.json | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print('Statistics:', json.dumps(data['statistics'], indent=2))
+print('Captured credentials:', len(data['captured_credentials']))
+print('Captured OTP:', len(data['captured_otp']))
+print('Relay logs:', len(data['relay_logs']))
+"
+
+
+================================================================================
+                    COMMON PROBLEMS & SOLUTIONS
+================================================================================
+
+PROBLEM: "Connection refused" when testing
+SOLUTION: 
+  - Ensure PersonB-integrated_app.py is running on port 5000
+  - Ensure PersonB-mitm_proxy.py is running on port 8080
+  - Check: ps aux | grep -E "(integrated_app|mitm_proxy)"
+
+PROBLEM: "404 Not Found" on /mfa/enroll/totp
+SOLUTION:
+  - Make sure you're using the UPDATED PersonB-mitm_proxy.py
+  - The proxy must have the /mfa/enroll/totp route
+  - Check: grep "mfa/enroll" PersonB-mitm_proxy.py
+
+PROBLEM: No OTP captured in logs
+SOLUTION:
+  - Verify the parameter name is 'token' not 'otp'
+  - Use: '{"username":"testuser","token":"123456"}'
+  - Updated proxy handles both 'token' and 'otp'
+
+PROBLEM: Invalid TOTP token
+SOLUTION:
+  - Generate token immediately before testing (30-second window)
+  - Make sure you're using the correct secret from enrollment
+  - Time sync: Check system time is correct
+
+PROBLEM: mitm_logs.json not created
+SOLUTION:
+  - Manually trigger: curl -X POST http://localhost:8080/proxy/save
+  - Or stop proxy with Ctrl+C (saves on shutdown)
+  - Check current directory: pwd
+
+PROBLEM: Empty captured arrays in logs
+SOLUTION:
+  - Ensure you sent requests THROUGH the proxy (port 8080)
+  - NOT directly to the app (port 5000)
+  - Verify: curl http://localhost:8080/proxy/captured
+
+PROBLEM: Port already in use
+SOLUTION:
+  - Find process: lsof -i :8080
+  - Kill it: kill <PID>
+  - Or use different port in PersonB-mitm_proxy.py
+
+
+================================================================================
+                    EXPECTED LOG STRUCTURE
+================================================================================
+
+mitm_logs.json should contain:
+
+{
+  "statistics": {
+    "total_relays": 4,                    // Number of relayed requests
+    "successful": 4,                      // Successful relays
+    "failed": 0,                          // Failed relays
+    "success_rate": "100.00%",            // Success percentage
+    "average_latency_ms": "15.43",        // Average relay time
+    "credentials_captured": 1,            // Login captures
+    "otp_captured": 1,                    // OTP captures
+    "otp_relay_attempts": 1,              // OTP relay tries
+    "otp_relay_success": 1,               // Successful OTP relays
+    "webauthn_relay_attempts": 0,         // WebAuthn tries
+    "webauthn_relay_success": 0           // WebAuthn successes
+  },
+  
+  "captured_credentials": [
+    {
+      "timestamp": "2024-...",
+      "username": "testuser",
+      "password": "password123",
+      "captured_from": "127.0.0.1"
+    }
+  ],
+  
+  "captured_otp": [
+    {
+      "timestamp": "2024-...",
+      "username": "testuser",
+      "otp": "123456",
+      "otp_type": "TOTP",
+      "captured_from": "127.0.0.1"
+    }
+  ],
+  
+  "relay_logs": [
+    {
+      "timestamp": "2024-...",
+      "endpoint": "/register",
+      "success": true,
+      "latency_ms": 12.34,
+      "relay_type": "generic",
+      "error": null
+    },
+    ...
+  ]
+}
+
+
+================================================================================
+                    KEY DEMONSTRATION POINTS
+================================================================================
+
+The MITM logs demonstrate:
+
+1. CREDENTIAL CAPTURE
+   - Proxy can intercept plaintext credentials during login
+   - Even with HTTPS, proxy in the middle sees everything
+   - Shows importance of end-to-end encryption
+
+2. OTP RELAY SUCCESS
+   - TOTP/HOTP tokens can be captured and immediately forwarded
+   - Proxy can authenticate to real server using captured OTP
+   - Time window (~30 seconds for TOTP) allows relay attack
+   - CRITICAL FINDING: OTP alone is vulnerable to MITM
+
+3. RELAY TIMING
+   - Average latency shows how fast relay can occur
+   - Sub-second latencies mean user won't notice
+   - Demonstrates real-world feasibility of attack
+
+4. WEBAUTHN PROTECTION (if tested)
+   - WebAuthn includes origin binding
+   - Relay attacks fail due to origin mismatch
+   - Demonstrates superior security of WebAuthn
+
+
+================================================================================
+                    WHAT TO INCLUDE IN REPORT
+================================================================================
+
+For your report, reference mitm_logs.json to show:
+
+1. Attack Success Rate
+   → "OTP relay attacks succeeded X% of the time"
+   → Show statistics.otp_relay_success vs otp_relay_attempts
+
+2. Captured Data Examples
+   → "We successfully captured N credentials and M OTP tokens"
+   → Reference captured_credentials and captured_otp arrays
+
+3. Relay Latency
+   → "Average relay time was X ms, making detection difficult"
+   → Show statistics.average_latency_ms
+
+4. Comparison
+   → "TOTP vulnerable to relay, WebAuthn protected by origin binding"
+   → Compare otp_relay_success vs webauthn_relay_success
+
+
+================================================================================
+                    ALTERNATIVE: QUICK REGENERATION
+================================================================================
+
+If you need to regenerate logs from scratch:
+
+# Stop any running servers
+pkill -f "integrated_app.py"
+pkill -f "mitm_proxy.py"
+
+# Remove old database and logs
+rm -f users.db mitm_logs.json
+
+# Terminal 1: Start integrated app
+python3 PersonB-integrated_app.py &
+
+# Wait for startup
+sleep 2
+
+# Terminal 2: Start MITM proxy in background
+python3 PersonB-mitm_proxy.py &
+
+# Wait for startup  
+sleep 2
+
+# Terminal 3: Run automated tests
+./test_mitm_complete.sh
+
+# Results will be in mitm_logs.json
+
+
+================================================================================
+                    VERIFICATION CHECKLIST
+================================================================================
+
+Before considering this step complete, verify:
+
+[ ] PersonB-integrated_app.py running on port 5000
+[ ] PersonB-mitm_proxy.py running on port 8080
+[ ] Test user registered through proxy
+[ ] TOTP enrollment completed through proxy
+[ ] Login captured credentials (check proxy output)
+[ ] OTP token generated and sent through proxy
+[ ] OTP relay attack succeeded (check proxy output)
+[ ] mitm_logs.json file created
+[ ] mitm_logs.json contains all 4 sections
+[ ] captured_credentials has at least one entry
+[ ] captured_otp has at least one entry
+[ ] relay_logs shows successful relays
+[ ] statistics shows correct counts
+
+
+================================================================================
+                         END OF GUIDE
+================================================================================

@@ -1,0 +1,62 @@
+================================================================================
+                    MITM PROXY QUICK REFERENCE
+================================================================================
+
+FIXED ISSUES:
+-------------
+✓ Port changed from 5001 to 8080 (matches guide)
+✓ Added /mfa/enroll/totp proxy route
+✓ Added /mfa/stats proxy route  
+✓ Handle both 'token' and 'otp' parameter names
+✓ Added /proxy/save endpoint to save logs
+
+PORTS:
+------
+5000 - PersonB-integrated_app.py (real server)
+8080 - PersonB-mitm_proxy.py (MITM proxy)
+
+QUICK START:
+------------
+Terminal 1: python3 PersonB-integrated_app.py
+Terminal 2: python3 PersonB-mitm_proxy.py
+Terminal 3: ./test_mitm_complete.sh
+
+Or manually:
+Terminal 3: curl -X POST http://localhost:8080/register -H "Content-Type: application/json" -d '{"username":"testuser","password":"password123","hash_type":"bcrypt"}'
+
+SAVE LOGS:
+----------
+curl -X POST http://localhost:8080/proxy/save
+
+Or Ctrl+C the proxy server
+
+VIEW LOGS:
+----------
+cat mitm_logs.json | python3 -m json.tool
+
+VERIFY SUCCESS:
+---------------
+grep -c "captured_credentials" mitm_logs.json  # Should be 1+
+grep -c "captured_otp" mitm_logs.json          # Should be 1+
+grep "OTP RELAY ATTACK SUCCESSFUL" <Terminal 2 output>
+
+KEY ENDPOINTS:
+--------------
+/proxy/stats     - View statistics
+/proxy/captured  - View captured data
+/proxy/save      - Save logs to file
+
+TROUBLESHOOTING:
+----------------
+No logs?         → curl -X POST http://localhost:8080/proxy/save
+Wrong port?      → Use 8080 not 5001
+404 error?       → Use updated PersonB-mitm_proxy.py
+No OTP capture?  → Use 'token' not 'otp' in JSON
+
+EXPECTED RESULT:
+----------------
+mitm_logs.json with:
+- statistics section
+- captured_credentials array (≥1 entry)
+- captured_otp array (≥1 entry)
+- relay_logs array (≥4 entries)

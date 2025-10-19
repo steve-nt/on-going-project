@@ -5,7 +5,8 @@ Demonstrates origin/RP-ID binding that prevents MITM attacks
 """
 
 from fido2.server import Fido2Server
-from fido2.webauthn import PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity, CollectedClientData
+from fido2.webauthn import PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity
+from fido2.client import CollectedClientData
 from fido2 import cbor
 import secrets
 import json
@@ -21,7 +22,7 @@ class WebAuthnManager:
             rp_id: Relying Party ID (domain)
             rp_name: Relying Party name
         """
-        self.rp = PublicKeyCredentialRpEntity(id=rp_id, name=rp_name)
+        self.rp = PublicKeyCredentialRpEntity(name=rp_name, id=rp_id)
         self.server = Fido2Server(self.rp)
         
         # Storage for registered credentials
@@ -40,8 +41,8 @@ class WebAuthnManager:
             user_id = secrets.token_bytes(32)
         
         user = PublicKeyCredentialUserEntity(
-            name=username,
             id=user_id,
+            name=username,
             display_name=username
         )
         
@@ -66,7 +67,7 @@ class WebAuthnManager:
         return {
             'username': username,
             'user_id': user_id.hex(),
-            'registration_options': self._serialize_registration_data(registration_data),
+            'registration_options': self._serialize_registration_data(registration_data.public_key),
             'state': state
         }
     
@@ -158,7 +159,7 @@ class WebAuthnManager:
             'timestamp': datetime.now().isoformat(),
             'username': username,
             'event': 'authentication_begin',
-            'challenge': auth_data.public_key.challenge.hex()
+            'challenge': auth_data['challenge'].hex()
         })
         
         return {
@@ -276,29 +277,30 @@ class WebAuthnManager:
     
     def _serialize_registration_data(self, data):
         """Convert registration data to serializable format"""
-        pk = data.public_key
         return {
-            'challenge': pk.challenge.hex(),
-            'rp': {'id': pk.rp.id, 'name': pk.rp.name},
+            'challenge': data.challenge.hex(),
+            'rp': {'id': data.rp.id, 'name': data.rp.name},
             'user': {
-                'id': pk.user.id.hex(),
-                'name': pk.user.name,
-                'displayName': pk.user.display_name or pk.user.name
+                'id': data.user.id.hex(),
+                'name': data.user.name,
+                'displayName': data.user.display_name
             },
-            'pubKeyCredParams': [{'type': p.type, 'alg': p.alg} for p in pk.pub_key_cred_params],
-            'timeout': pk.timeout or 60000
+            'pubKeyCredParams': [
+                {'type': str(p.type.value), 'alg': p.alg}
+                for p in data.pub_key_cred_params
+            ],
+            'timeout': data.timeout if data.timeout else 60000
         }
     
     def _serialize_authentication_data(self, data):
         """Convert authentication data to serializable format"""
-        pk = data.public_key
         return {
-            'challenge': pk.challenge.hex(),
-            'timeout': pk.timeout or 60000,
-            'rpId': pk.rp_id,
+            'challenge': data['challenge'].hex(),
+            'timeout': data.get('timeout', 60000),
+            'rpId': data.get('rpId'),
             'allowCredentials': [
-                {'type': str(cred.type), 'id': cred.id.hex()}
-                for cred in (pk.allow_credentials or [])
+                {'type': 'public-key', 'id': cred['id'].hex()}
+                for cred in data.get('allowCredentials', [])
             ]
         }
     

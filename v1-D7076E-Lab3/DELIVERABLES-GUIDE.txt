@@ -141,7 +141,7 @@ Step 1: Generate QR Codes
   
   Run TOTP enrollment to generate QR codes:
   
-  python PersonB-mfa_totp.py
+  python3 PersonB-mfa_totp.py
   
   Generated files:
   ✓ qr_testuser_totp.png
@@ -152,7 +152,7 @@ Step 2: Generate WebAuthn Traces
   
   Run WebAuthn implementation:
   
-  python PersonB-fido2_webauthn.py
+  python3 PersonB-fido2_webauthn.py
   
   Generated files:
   ✓ webauthn_logs.json (contains credential IDs, public keys, challenges)
@@ -160,19 +160,55 @@ Step 2: Generate WebAuthn Traces
 
 Step 3: Generate MITM/Relay Logs
   
-  Terminal 1 - Start the server:
-  python PersonB-integrated_app.py
-  
-  Terminal 2 - Run MITM proxy:
-  python PersonB-mitm_proxy.py
-  
-  Terminal 3 - Execute test requests (register user, get OTP, login):
-  curl -X POST http://localhost:8080/register \
-    -H "Content-Type: application/json" \
-    -d '{"username":"testuser","password":"password123","hash_type":"bcrypt"}'
-  
-  Generated files:
-  ✓ mitm_logs.json (captured credentials, OTP tokens, relay timings)
+
+   Terminal 1 - Start Server
+
+     cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+     python3 PersonB-integrated_app.py
+
+   Terminal 2 - Start MITM Proxy
+
+     cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+     python3 PersonB-mitm_proxy.py
+
+   Terminal 3 - Execute These Commands
+
+   Step 1 - Register:
+
+     curl -X POST http://localhost:8080/register \
+       -H "Content-Type: application/json" \
+       -d '{"username":"testuser","password":"password123","hash_type":"bcrypt"}'
+
+   Step 2 - Enroll TOTP (copy the secret!):
+
+     curl -X POST http://localhost:8080/mfa/enroll/totp \
+       -H "Content-Type: application/json" \
+       -d '{"username":"testuser"}'
+
+   Step 3 - Login (captures password):
+
+     curl -X POST http://localhost:8080/login \
+       -H "Content-Type: application/json" \
+       -d '{"username":"testuser","password":"password123"}'
+
+   Step 4a - Generate TOTP token:
+
+      python3 -c "import pyotp; print('Token:', pyotp.TOTP('SECRET_FROM_STEP_2').now())"
+
+   Step 4b - Send token (captures OTP):
+
+     curl -X POST http://localhost:8080/mfa/verify \
+       -H "Content-Type: application/json" \
+       -d '{"username":"testuser","token":"YOUR_TOKEN_FROM_4a"}'
+
+   Step 5 - Save logs:
+
+     curl -X POST http://localhost:8080/proxy/save
+
+   Step 6 - Verify:
+
+     cat mitm_logs.json | python3 -m json.tool
+
 
 
 Step 4: Generate Cracking Outputs

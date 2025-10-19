@@ -1,0 +1,66 @@
+{
+  "statistics": {
+    "total_relays": 4,
+    "successful": 4,
+    "failed": 0,
+    "success_rate": "100.00%",
+    "average_latency_ms": "29.14",
+    "credentials_captured": 1,
+    "otp_captured": 1,
+    "otp_relay_attempts": 1,
+    "otp_relay_success": 1,
+    "webauthn_relay_attempts": 0,
+    "webauthn_relay_success": 0
+  },
+  "captured_credentials": [
+    {
+      "timestamp": "2025-10-19T11:46:10.918836",
+      "username": "testuser_mitm",
+      "password": "password123",
+      "captured_from": "127.0.0.1"
+    }
+  ],
+  "captured_otp": [
+    {
+      "timestamp": "2025-10-19T11:46:12.055398",
+      "username": "testuser_mitm",
+      "otp": "533218",
+      "otp_type": "TOTP",
+      "captured_from": "127.0.0.1"
+    }
+  ],
+  "relay_logs": [
+    {
+      "timestamp": "2025-10-19T11:46:08.728555",
+      "endpoint": "/register",
+      "success": true,
+      "latency_ms": 47.81317710876465,
+      "relay_type": "generic",
+      "error": null
+    },
+    {
+      "timestamp": "2025-10-19T11:46:09.774585",
+      "endpoint": "/mfa/enroll/totp",
+      "success": true,
+      "latency_ms": 27.980566024780273,
+      "relay_type": "generic",
+      "error": null
+    },
+    {
+      "timestamp": "2025-10-19T11:46:10.948150",
+      "endpoint": "/login",
+      "success": true,
+      "latency_ms": 29.44159507751465,
+      "relay_type": "credential_capture",
+      "error": null
+    },
+    {
+      "timestamp": "2025-10-19T11:46:12.066651",
+      "endpoint": "/mfa/verify",
+      "success": true,
+      "latency_ms": 11.317968368530273,
+      "relay_type": "otp_relay",
+      "error": null
+    }
+  ]
+}
