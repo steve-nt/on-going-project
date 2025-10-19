@@ -1,6 +1,6 @@
 """
 Integrated Flask Application with MFA Support
-
+Person B - Integration of TOTP, HOTP, and WebAuthn with Person A's API
 """
 
 from flask import Flask, request, jsonify

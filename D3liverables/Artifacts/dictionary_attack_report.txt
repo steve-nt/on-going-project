@@ -1,0 +1,31 @@
+================================================================================
+PASSWORD CRACKING ANALYSIS REPORT
+================================================================================
+Generated: 2025-10-19 13:14:27
+
+SUMMARY
+--------------------------------------------------------------------------------
+Total attacks performed: 2
+Successful cracks: 2
+Failed attempts: 0
+
+DETAILED RESULTS
+--------------------------------------------------------------------------------
+
+Attack #1
+  Method: dictionary
+  Algorithm: sha256
+  Success: True
+  Password: password
+  Attempts: 1
+  Time: 0.00 seconds
+  Rate: 3894.43 attempts/second
+
+Attack #2
+  Method: brute_force
+  Algorithm: sha256
+  Success: True
+  Password: ab1
+  Attempts: 1396
+  Time: 0.12 seconds
+  Rate: 11463.15 attempts/second

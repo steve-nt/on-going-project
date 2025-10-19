@@ -1,7 +1,5 @@
 """
 MITM (Man-in-the-Middle) Relay Proxy Implementation
-Person B - Attack Demo Component
-Demonstrates OTP relay attack and WebAuthn protection
 """
 
 from flask import Flask, request, jsonify, Response

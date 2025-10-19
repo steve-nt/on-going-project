@@ -1,5 +1,6 @@
 """
 TOTP (Time-based One-Time Password) Implementation
+Person B - MFA Component
 """
 
 import pyotp

@@ -1,5 +1,6 @@
 """
 HOTP (HMAC-based One-Time Password) Implementation
+Person B - MFA Component with Counter Desync Demonstration
 """
 
 import pyotp

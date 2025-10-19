@@ -1,0 +1,22 @@
+{
+  "total_attempts": 3,
+  "successful": 2,
+  "failed": 1,
+  "time_window_used": [
+    {
+      "timestamp": "2025-10-19T14:22:00.749405",
+      "window": 0,
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-10-19T14:22:00.749791",
+      "window": 1,
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-10-19T14:22:00.750232",
+      "window": 1,
+      "status": "failed"
+    }
+  ]
+}

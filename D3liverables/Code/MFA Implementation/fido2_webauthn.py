@@ -1,5 +1,7 @@
 """
 FIDO2/WebAuthn Implementation
+Person B - MFA Component
+Demonstrates origin/RP-ID binding that prevents MITM attacks
 """
 
 from fido2.server import Fido2Server

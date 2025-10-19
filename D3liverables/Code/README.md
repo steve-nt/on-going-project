@@ -4,9 +4,15 @@
 
 This project implements a comprehensive authentication security system demonstrating various password hashing schemes, multi-factor authentication (MFA) methods, and security attack/defense mechanisms. The project showcases the evolution from basic password storage to modern FIDO2/WebAuthn authentication, along with practical demonstrations of common security vulnerabilities and their mitigations.
 
+## Authors
+
+- Person A: Password hashing implementation (SHA-256, SHA-3, bcrypt, Argon2)
+- Person B: MFA implementation (TOTP, HOTP, FIDO2/WebAuthn) and attack demonstrations
+
 ## Table of Contents
 
-1. [Project Structure](#project-structure)
+1. [Quick Start](#quick-start)
+2. [Project Structure](#project-structure)
 3. [Features](#features)
 4. [Installation](#installation)
 5. [Usage](#usage)
@@ -19,7 +25,42 @@ This project implements a comprehensive authentication security system demonstra
 
 ---
 
+## Quick Start
 
+### Automated Launcher (Recommended)
+
+The easiest way to run this project:
+
+```bash
+cd "Deliverables/Code"
+python3 launcher.py
+```
+
+The launcher provides:
+- ✅ Automatic dependency checking and installation
+- ✅ Interactive menu with guided execution
+- ✅ Process management for background servers
+- ✅ Step-by-step demonstrations
+- ✅ Automatic cleanup on exit
+
+See [QUICKSTART.md](QUICKSTART.md) for detailed launcher usage.
+
+### Manual Quick Start
+
+If you prefer manual execution:
+
+```bash
+# 1. Install dependencies
+pip3 install --user flask bcrypt argon2-cffi pyotp qrcode pillow fido2 requests
+
+# 2. Start the authentication server
+cd "Core Application Files"
+python3 integrated_app.py
+
+# 3. In another terminal, run demonstrations
+cd "../MFA Implementation"
+python3 mfa_totp.py
+```
 
 ---
 
@@ -28,6 +69,8 @@ This project implements a comprehensive authentication security system demonstra
 ```
 Deliverables/
 ├── Code/
+│   ├── launcher.py                    # Automated project launcher
+│   ├── QUICKSTART.md                  # Quick reference guide
 │   ├── README.md                      # This file
 │   │
 │   ├── Core Application Files/
@@ -36,30 +79,31 @@ Deliverables/
 │   │   └── users.db                   # SQLite database
 │   │
 │   ├── MFA Implementation/
-│   │   ├── mfa_totp.py                # TOTP implementation
-│   │   ├── mfa_hotp.py                # HOTP implementation
-│   │   ├── fido2_webauthn.py          # WebAuthn/FIDO2 implementation
-│   │   └── mitm_proxy.py              # MITM relay demonstration
+│   │   ├── mfa_totp.py               # TOTP implementation
+│   │   ├── mfa_hotp.py               # HOTP implementation
+│   │   ├── fido2_webauthn.py         # WebAuthn/FIDO2 implementation
+│   │   └── mitm_proxy.py             # MITM relay demonstration
 │   │
 │   └── Attack & Testing Scripts/
 │       ├── dictionary_attack.py       # Password cracking
 │       ├── crack_passwords.py         # Brute-force cracking
 │       ├── timing_attack.py           # Timing attack demo
-│       ├── mitm_proxy.py              # MITM relay proxy
+│       ├── mitm_proxy.py             # MITM relay proxy
 │       └── testing.py                 # API testing utilities
 │
 ├── Artifacts/
 │   ├── qr_*.png                       # TOTP QR codes
 │   ├── *_stats.json                   # MFA statistics
-│   ├── webauthn_logs.json             # WebAuthn traces
-│   ├── mitm_logs.json                 # MITM attack logs
-│   ├── timing_attack_results.txt      # Timing measurements
-│   ├── dictionary_attack_report.txt   # Cracking results
-│   └── *.jpg                          # Screenshots of demonstrations
+│   ├── webauthn_logs.json            # WebAuthn traces
+│   ├── mitm_logs.json                # MITM attack logs
+│   ├── timing_attack_results.txt     # Timing measurements
+│   ├── dictionary_attack_report.txt  # Cracking results
+│   └── *.jpg                         # Screenshots of demonstrations
 │
 ├── Report/
-    └── Lab3_Report.pdf              # Comprehensive report (pdf))
-
+│   └── Lab3_Report.tex               # Comprehensive report (LaTeX)
+│
+└── Lab3.txt                          # Lab requirements
 ```
 
 ---
@@ -140,11 +184,24 @@ All implementations use:
 - pip (Python package manager)
 - SQLite3 (usually included with Python)
 
-### Installation
+### Automatic Installation
+
+Use the launcher for automatic dependency installation:
+
+```bash
+python3 launcher.py
+# Select option to install missing packages when prompted
+```
+
+### Manual Installation
 
 ```bash
 # Install all required packages
 pip3 install --user flask bcrypt argon2-cffi pyotp qrcode pillow fido2 requests
+
+# Or install from requirements file (if provided)
+pip3 install --user -r requirements.txt
+```
 
 ### Verify Installation
 
@@ -156,12 +213,28 @@ python3 -c "import flask, bcrypt, argon2, pyotp, qrcode, fido2, requests; print(
 
 ## Usage
 
+### Option 1: Automated Launcher (Recommended)
+
+```bash
+cd "Deliverables/Code"
+python3 launcher.py
+```
+
+**Menu Options:**
+1. **Quick Demo** - Automated full demonstration
+2. **Step-by-Step Tour** - Interactive walkthrough with descriptions
+3. **Individual Components** - Run specific parts on demand
+4. **Tests & Attacks** - Run all security demonstrations
+5. **System Status** - Check installation and processes
+
+### Option 2: Manual Execution
+
 #### Start Core Authentication Server
 
 ```bash
 cd "Core Application Files"
 python3 integrated_app.py
-# Server runs on http://localhost:5050
+# Server runs on http://localhost:5000
 ```
 
 #### Run MFA Demonstrations
@@ -494,7 +567,7 @@ System pepper adds additional layer requiring:
 
 ## Artifacts
 
-All generated artifacts are stored manually in`../Artifacts/`:
+All generated artifacts are stored in `../Artifacts/`:
 
 ### MFA Artifacts
 - `qr_*.png` - QR codes for TOTP enrollment
@@ -630,3 +703,118 @@ python3 testing.py
 
 ---
 
+## Performance Notes
+
+### Hash Algorithm Benchmarks (Approximate)
+
+Based on dictionary attack results:
+
+| Algorithm | Hashes/sec | Notes |
+|-----------|------------|-------|
+| SHA-256 (100 rounds) | ~11,000 | Fast but vulnerable |
+| SHA-3 (100 rounds) | ~10,000 | Similar to SHA-256 |
+| bcrypt (cost 8) | ~10 | Good balance |
+| Argon2 (default) | ~5 | Best security |
+
+**Recommendation:** Use Argon2 for new systems, bcrypt for compatibility.
+
+---
+
+## Security Recommendations
+
+### For Developers
+
+1. **Use Argon2 or bcrypt** - Avoid fast hashes like SHA-256 alone
+2. **Implement MFA** - Preferably WebAuthn/FIDO2
+3. **Use constant-time comparison** - Prevent timing attacks
+4. **Generate secure random** - Use `secrets` module
+5. **Apply salt and pepper** - Unique salts per user, system pepper
+6. **Use HMAC for integrity** - Protect API responses
+7. **Validate all inputs** - Prevent injection attacks
+
+### For Users
+
+1. **Enable MFA** - Use WebAuthn when available
+2. **Use unique passwords** - Password managers help
+3. **Verify URLs** - Check domain before entering credentials
+4. **Use hardware keys** - YubiKey, TouchID for WebAuthn
+5. **Watch for phishing** - TOTP can be relayed, WebAuthn cannot
+
+### Deployment Considerations
+
+- **HTTPS only** - Required for WebAuthn
+- **Rate limiting** - Prevent brute-force attacks
+- **Account lockout** - After failed attempts
+- **Logging and monitoring** - Detect attack patterns
+- **Regular updates** - Keep dependencies current
+
+---
+
+## Known Limitations
+
+1. **Local-only MITM demo** - For educational purposes only
+2. **Simplified WebAuthn** - Production needs more error handling
+3. **No rate limiting** - Should be added for production
+4. **SQLite database** - Use PostgreSQL/MySQL for production
+5. **No account lockout** - Should implement after N failed attempts
+6. **Hardcoded secrets** - Use environment variables in production
+
+---
+
+## Future Enhancements
+
+- [ ] Add HOTP to integrated_app.py endpoints
+- [ ] Implement rate limiting and account lockout
+- [ ] Add WebAuthn registration/authentication endpoints to API
+- [ ] Support multiple authenticators per user
+- [ ] Add password strength requirements
+- [ ] Implement session management
+- [ ] Add audit logging
+- [ ] Support for hardware security keys (YubiKey)
+- [ ] Add biometric authentication support
+- [ ] Implement password reset flows
+
+---
+
+## References
+
+### RFCs and Standards
+- RFC 6238 - TOTP: Time-Based One-Time Password Algorithm
+- RFC 4226 - HOTP: An HMAC-Based One-Time Password Algorithm
+- RFC 2104 - HMAC: Keyed-Hashing for Message Authentication
+- W3C WebAuthn Specification
+- FIDO2/CTAP2 Specifications
+
+### Libraries Used
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [pyotp Documentation](https://pyauth.github.io/pyotp/)
+- [python-fido2 Documentation](https://github.com/Yubico/python-fido2)
+- [Argon2 Documentation](https://argon2-cffi.readthedocs.io/)
+
+### Learning Resources
+- OWASP Password Storage Cheat Sheet
+- NIST Special Publication 800-63B (Digital Identity Guidelines)
+- OWASP Authentication Cheat Sheet
+
+---
+
+## License
+
+This project is for educational purposes as part of Lab 3: Authentication Security.
+
+---
+
+## Contact
+
+For questions or issues related to this project:
+- Check the troubleshooting section above
+- Review the QUICKSTART.md guide
+- Consult the comprehensive report in `../Report/Lab3_Report.tex`
+
+---
+
+## Acknowledgments
+
+This project demonstrates authentication security concepts from basic password hashing to modern FIDO2/WebAuthn. It is designed for educational purposes to understand both attack vectors and defense mechanisms in authentication systems.
+
+**Last Updated:** 2025-10-19
