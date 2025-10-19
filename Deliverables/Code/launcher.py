@@ -83,6 +83,9 @@ class ProjectLauncher:
             try:
                 if package == 'pillow':
                     __import__('PIL')
+                elif package == 'argon2-cffi':
+                    # argon2-cffi is imported as 'argon2'
+                    __import__('argon2')
                 else:
                     __import__(package.replace('-', '_'))
                 self.print_success(f"{package} is installed")
