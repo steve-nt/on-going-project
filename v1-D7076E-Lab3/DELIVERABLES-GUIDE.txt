@@ -1,0 +1,792 @@
+================================================================================
+                        LAB3 DELIVERABLES GUIDE
+           Step-by-Step Instructions for Creating Project Deliverables
+================================================================================
+
+Based on the assignment requirements, this guide shows how to organize the
+existing files into the three required deliverables.
+
+
+================================================================================
+                        ASSIGNMENT DELIVERABLES
+================================================================================
+
+The assignment requires three main deliverables:
+
+1. CODE - Flask app, MITM relay, test scripts, README
+2. ARTIFACTS - QR images, WebAuthn traces, logs, timing & cracking outputs
+3. REPORT - Experiment setup, attack results, comparisons, recommendations
+
+
+================================================================================
+                    DELIVERABLE #1: CODE PACKAGE
+================================================================================
+
+WHAT TO INCLUDE:
+All Python implementation files and documentation needed to run the system.
+
+FILES TO PACKAGE:
+---------------------------------------------------------------------------
+
+Core Application Files:
+  ✓ PersonA-app.py                    - Basic Flask API with password hashing
+  ✓ PersonB-integrated_app.py         - Full Flask app with MFA integration
+  
+MFA Implementation:
+  ✓ PersonB-mfa_totp.py               - TOTP implementation module
+  ✓ PersonB-mfa_hotp.py               - HOTP implementation module
+  ✓ PersonB-fido2_webauthn.py         - WebAuthn/FIDO2 implementation
+
+Attack & Testing Scripts:
+  ✓ PersonA-crack_passwords.py        - Password cracking demonstration
+  ✓ PersonA-timing_attack.py          - Timing attack demo
+  ✓ PersonB-dictionary_attack.py      - Dictionary/brute-force attacks
+  ✓ PersonB-mitm_proxy.py             - MITM relay proxy
+
+Testing Scripts:
+  ✓ PersonA-testing.py                - API testing suite
+
+Documentation:
+  ✓ README.txt                        - Project overview and quick start
+  ✓ EXECUTION-GUIDE.txt               - Detailed execution instructions
+  ✓ Assigment-PersonA-PersonB.txt     - Original assignment
+
+TOTAL: 12 files
+
+
+HOW TO PACKAGE:
+---------------------------------------------------------------------------
+
+Option A - Create ZIP Archive:
+  
+  cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+  
+  zip -r Lab3_Code_Deliverable.zip \
+    PersonA-app.py \
+    PersonB-integrated_app.py \
+    PersonB-mfa_totp.py \
+    PersonB-mfa_hotp.py \
+    PersonB-fido2_webauthn.py \
+    PersonA-crack_passwords.py \
+    PersonA-timing_attack.py \
+    PersonB-dictionary_attack.py \
+    PersonB-mitm_proxy.py \
+    PersonA-testing.py \
+    README.txt \
+    EXECUTION-GUIDE.txt \
+    Assigment-PersonA-PersonB.txt
+
+
+Option B - Create TAR Archive:
+  
+  cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+  
+  tar -czf Lab3_Code_Deliverable.tar.gz \
+    PersonA-app.py \
+    PersonB-integrated_app.py \
+    PersonB-mfa_totp.py \
+    PersonB-mfa_hotp.py \
+    PersonB-fido2_webauthn.py \
+    PersonA-crack_passwords.py \
+    PersonA-timing_attack.py \
+    PersonB-dictionary_attack.py \
+    PersonB-mitm_proxy.py \
+    PersonA-testing.py \
+    README.txt \
+    EXECUTION-GUIDE.txt \
+    Assigment-PersonA-PersonB.txt
+
+
+Option C - Create Dedicated Folder:
+  
+  mkdir Lab3_Code_Deliverable
+  
+  cp PersonA-app.py Lab3_Code_Deliverable/
+  cp PersonB-integrated_app.py Lab3_Code_Deliverable/
+  cp PersonB-mfa_totp.py Lab3_Code_Deliverable/
+  cp PersonB-mfa_hotp.py Lab3_Code_Deliverable/
+  cp PersonB-fido2_webauthn.py Lab3_Code_Deliverable/
+  cp PersonA-crack_passwords.py Lab3_Code_Deliverable/
+  cp PersonA-timing_attack.py Lab3_Code_Deliverable/
+  cp PersonB-dictionary_attack.py Lab3_Code_Deliverable/
+  cp PersonB-mitm_proxy.py Lab3_Code_Deliverable/
+  cp PersonA-testing.py Lab3_Code_Deliverable/
+  cp README.txt Lab3_Code_Deliverable/
+  cp EXECUTION-GUIDE.txt Lab3_Code_Deliverable/
+  cp Assigment-PersonA-PersonB.txt Lab3_Code_Deliverable/
+
+
+VERIFICATION:
+---------------------------------------------------------------------------
+Ensure the package includes:
+  ✓ Main Flask applications (2 files)
+  ✓ MFA modules (3 files)
+  ✓ Attack/testing scripts (4 files)
+  ✓ Testing suite (1 file)
+  ✓ Documentation (3 files)
+  ✓ Requirements: Flask, bcrypt, argon2-cffi, pyotp, qrcode, pillow, fido2
+
+
+================================================================================
+                    DELIVERABLE #2: ARTIFACTS PACKAGE
+================================================================================
+
+WHAT TO INCLUDE:
+All generated outputs from running the code - QR codes, logs, traces, stats.
+
+ARTIFACTS TO GENERATE:
+---------------------------------------------------------------------------
+
+Step 1: Generate QR Codes
+  
+  Run TOTP enrollment to generate QR codes:
+  
+  python PersonB-mfa_totp.py
+  
+  Generated files:
+  ✓ qr_testuser_totp.png
+  ✓ (Any other qr_<username>_totp.png files)
+
+
+Step 2: Generate WebAuthn Traces
+  
+  Run WebAuthn implementation:
+  
+  python PersonB-fido2_webauthn.py
+  
+  Generated files:
+  ✓ webauthn_logs.json (contains credential IDs, public keys, challenges)
+
+
+Step 3: Generate MITM/Relay Logs
+  
+  Terminal 1 - Start the server:
+  python PersonB-integrated_app.py
+  
+  Terminal 2 - Run MITM proxy:
+  python PersonB-mitm_proxy.py
+  
+  Terminal 3 - Execute test requests (register user, get OTP, login):
+  curl -X POST http://localhost:8080/register \
+    -H "Content-Type: application/json" \
+    -d '{"username":"testuser","password":"password123","hash_type":"bcrypt"}'
+  
+  Generated files:
+  ✓ mitm_logs.json (captured credentials, OTP tokens, relay timings)
+
+
+Step 4: Generate Cracking Outputs
+  
+  Run password cracking analysis:
+  
+  python PersonB-dictionary_attack.py
+  
+  Generated files:
+  ✓ cracking_report.txt (time-to-crack, success rates, hash comparisons)
+
+
+Step 5: Generate Timing Attack Data
+  
+  Run timing attack demonstration:
+  
+  python PersonA-timing_attack.py
+  
+  Console output includes:
+  ✓ Timing measurements for different comparison methods
+  ✓ Statistical analysis of timing leakage
+  
+  (Capture output to file):
+  python PersonA-timing_attack.py > timing_attack_results.txt
+
+
+Step 6: Generate MFA Statistics
+  
+  After running TOTP/HOTP tests:
+  
+  Generated files:
+  ✓ totp_stats.json (verification attempts, success rates, time windows)
+  ✓ hotp_stats.json (counter usage, desync events, resync attempts)
+
+
+Step 7: Capture Database State
+  
+  After running all tests, copy the database:
+  
+  cp users.db artifacts_users.db
+  
+  This shows:
+  ✓ User schema with salt, hash, hash_type
+  ✓ MFA enrollment data
+  ✓ MFA verification logs
+
+
+COMPLETE ARTIFACTS LIST:
+---------------------------------------------------------------------------
+
+QR Images:
+  ✓ qr_testuser_totp.png
+  ✓ qr_<username>_totp.png (for each enrolled user)
+
+WebAuthn Traces:
+  ✓ webauthn_logs.json
+    - Registration challenges and responses
+    - Credential IDs
+    - Public keys
+    - Authentication events
+
+MITM/Relay Logs:
+  ✓ mitm_logs.json
+    - Captured credentials
+    - Intercepted OTP tokens
+    - Relay success/failure rates
+    - Timing measurements (latency)
+
+Cracking Outputs:
+  ✓ cracking_report.txt
+    - Dictionary attack results
+    - Brute-force timings
+    - Hash algorithm comparisons
+    - Success rates per algorithm
+
+Timing Attack Results:
+  ✓ timing_attack_results.txt
+    - Naive comparison timings
+    - Constant-time comparison timings
+    - Statistical analysis
+    - Mitigation effectiveness
+
+MFA Statistics:
+  ✓ totp_stats.json
+  ✓ hotp_stats.json
+  ✓ mfa_logs table in database
+
+Database:
+  ✓ artifacts_users.db (snapshot of database with test data)
+
+
+HOW TO PACKAGE:
+---------------------------------------------------------------------------
+
+Option A - Create ZIP Archive:
+  
+  # First generate all artifacts by running the scripts above
+  
+  zip -r Lab3_Artifacts_Deliverable.zip \
+    qr_*.png \
+    webauthn_logs.json \
+    mitm_logs.json \
+    cracking_report.txt \
+    timing_attack_results.txt \
+    totp_stats.json \
+    hotp_stats.json \
+    artifacts_users.db
+
+
+Option B - Create Dedicated Folder:
+  
+  mkdir Lab3_Artifacts_Deliverable
+  
+  # Copy all generated artifacts
+  cp qr_*.png Lab3_Artifacts_Deliverable/
+  cp webauthn_logs.json Lab3_Artifacts_Deliverable/
+  cp mitm_logs.json Lab3_Artifacts_Deliverable/
+  cp cracking_report.txt Lab3_Artifacts_Deliverable/
+  cp timing_attack_results.txt Lab3_Artifacts_Deliverable/
+  cp totp_stats.json Lab3_Artifacts_Deliverable/
+  cp hotp_stats.json Lab3_Artifacts_Deliverable/
+  cp users.db Lab3_Artifacts_Deliverable/artifacts_users.db
+  
+  # Create README for artifacts
+  cat > Lab3_Artifacts_Deliverable/ARTIFACTS_README.txt << 'EOF'
+ARTIFACTS DESCRIPTION
+=====================
+
+This folder contains all generated artifacts from the authentication
+security implementation and attack demonstrations.
+
+QR Codes (qr_*.png):
+- TOTP enrollment QR codes for authenticator apps
+- Generated during MFA enrollment
+
+WebAuthn Logs (webauthn_logs.json):
+- FIDO2 registration and authentication traces
+- Contains credential IDs, public keys, challenges
+
+MITM Logs (mitm_logs.json):
+- Captured credentials and OTP tokens
+- Relay success/failure data
+- Timing measurements
+
+Cracking Report (cracking_report.txt):
+- Password cracking analysis
+- Time-to-crack for different hash algorithms
+- Dictionary and brute-force results
+
+Timing Attack Results (timing_attack_results.txt):
+- Timing leakage measurements
+- Naive vs constant-time comparison benchmarks
+
+MFA Statistics (totp_stats.json, hotp_stats.json):
+- Verification attempt logs
+- Success/failure rates
+- Time window and counter data
+
+Database (artifacts_users.db):
+- SQLite database with test users
+- Shows schema and MFA metadata
+EOF
+
+
+VERIFICATION:
+---------------------------------------------------------------------------
+Ensure the package includes:
+  ✓ At least one QR code image
+  ✓ WebAuthn traces with credential data
+  ✓ MITM relay logs showing capture
+  ✓ Cracking report with timings
+  ✓ Timing attack analysis
+  ✓ MFA statistics files
+  ✓ Database snapshot
+
+
+================================================================================
+                    DELIVERABLE #3: REPORT PACKAGE
+================================================================================
+
+WHAT TO INCLUDE:
+Comprehensive written analysis covering experiment setup, results, comparisons,
+and recommendations.
+
+FILES TO INCLUDE:
+---------------------------------------------------------------------------
+
+Primary Reports:
+  ✓ PersonA-Report.txt                - Person A's detailed analysis
+  ✓ PersonB-Report.txt                - Person B's comprehensive report
+  ✓ PersonA-Task-Completion-Report.txt - Person A completion analysis
+  ✓ PersonB-Task-Completion-Summary.txt - Person B completion summary
+
+Supporting Documentation:
+  ✓ PersonA.txt                       - Person A documentation
+  ✓ README.txt                        - Project overview
+
+TOTAL: 6 files
+
+
+REPORT CONTENT MAPPING:
+---------------------------------------------------------------------------
+
+The existing report files already cover all required sections:
+
+1. EXPERIMENT SETUP:
+   Location: PersonA-Report.txt (Section on Password Storage)
+   Location: PersonB-Report.txt (Section 2: Experimental Setup)
+   
+   Covers:
+   ✓ Testing environment
+   ✓ Hash algorithm configurations
+   ✓ Cost parameters (bcrypt rounds, Argon2 memory)
+   ✓ MFA setup (TOTP/HOTP/WebAuthn)
+
+2. ATTACK RESULTS:
+   Location: PersonA-Report.txt (Cracking & Timing sections)
+   Location: PersonB-Report.txt (Section 3: Attack Analysis)
+   
+   Covers:
+   ✓ Success rates for dictionary attacks
+   ✓ Time-to-crack measurements
+   ✓ Timing attack measurements
+   ✓ MITM relay success/failure
+
+3. SALT/PEPPER EFFECTS:
+   Location: PersonA-Report.txt (Salt & Pepper Analysis section)
+   Location: PersonA-Task-Completion-Report.txt (Task 3 analysis)
+   
+   Covers:
+   ✓ Per-user salt benefits
+   ✓ System pepper impact
+   ✓ Rainbow table resistance
+   ✓ Cracking difficulty comparison
+
+4. MFA COMPARISON:
+   Location: PersonB-Report.txt (Section 1.2: MFA)
+   Location: PersonB-Task-Completion-Summary.txt (Tasks 1-2)
+   
+   Covers:
+   ✓ HOTP vs TOTP comparison
+   ✓ Counter desync handling
+   ✓ Time window trade-offs
+   ✓ FIDO2/WebAuthn advantages
+   ✓ Relay attack resistance
+
+5. MITIGATIONS & RECOMMENDATIONS:
+   Location: PersonA-Report.txt (HMAC & Integrity section)
+   Location: PersonB-Report.txt (Section 4: Security Recommendations)
+   
+   Covers:
+   ✓ Constant-time comparison
+   ✓ HMAC for integrity
+   ✓ Optimal hash parameters
+   ✓ MFA deployment strategies
+   ✓ Defense-in-depth approach
+
+6. DEMO EVIDENCE:
+   Reference to: Artifacts package
+   
+   Shows:
+   ✓ Screenshots/logs of TOTP relay success
+   ✓ WebAuthn relay failure (origin binding)
+   ✓ Captured MITM logs
+   ✓ Visual QR codes
+
+
+HOW TO PACKAGE:
+---------------------------------------------------------------------------
+
+Option A - Create ZIP Archive:
+  
+  zip -r Lab3_Report_Deliverable.zip \
+    PersonA-Report.txt \
+    PersonB-Report.txt \
+    PersonA-Task-Completion-Report.txt \
+    PersonB-Task-Completion-Summary.txt \
+    PersonA.txt \
+    README.txt
+
+
+Option B - Create Dedicated Folder:
+  
+  mkdir Lab3_Report_Deliverable
+  
+  cp PersonA-Report.txt Lab3_Report_Deliverable/
+  cp PersonB-Report.txt Lab3_Report_Deliverable/
+  cp PersonA-Task-Completion-Report.txt Lab3_Report_Deliverable/
+  cp PersonB-Task-Completion-Summary.txt Lab3_Report_Deliverable/
+  cp PersonA.txt Lab3_Report_Deliverable/
+  cp README.txt Lab3_Report_Deliverable/
+  
+  # Create master report index
+  cat > Lab3_Report_Deliverable/REPORT_INDEX.txt << 'EOF'
+LAB3 REPORT DELIVERABLE - READING GUIDE
+========================================
+
+This package contains comprehensive analysis and documentation of the
+authentication security implementation project.
+
+RECOMMENDED READING ORDER:
+--------------------------
+
+1. README.txt
+   Start here for project overview and quick reference
+
+2. PersonB-Report.txt (40 KB - Most comprehensive)
+   Complete theoretical and experimental analysis
+   Covers: MFA theory, attack analysis, security recommendations
+   Sections:
+   - Section 1: Theoretical Foundations
+   - Section 2: Implementation Details  
+   - Section 3: Experimental Analysis
+   - Section 4: Security Recommendations
+
+3. PersonA-Report.txt (19 KB - Implementation focused)
+   Detailed coverage of password hashing and integrity
+   Covers: SHA-256, SHA-3, bcrypt, Argon2, salt/pepper, HMAC
+   Includes: Cracking results, timing attack analysis
+
+4. PersonA-Task-Completion-Report.txt
+   Task-by-task completion analysis for Person A's work
+   Shows mapping from requirements to implementation
+
+5. PersonB-Task-Completion-Summary.txt
+   Task-by-task completion analysis for Person B's work
+   Lists all deliverables and file descriptions
+
+6. PersonA.txt
+   Additional Person A documentation and notes
+
+REPORT SECTIONS MAPPED TO ASSIGNMENT REQUIREMENTS:
+---------------------------------------------------
+
+Experiment Setup:
+→ PersonB-Report.txt - Section 2
+→ PersonA-Report.txt - Testing sections
+
+Attack Results (success rates, timings):
+→ PersonB-Report.txt - Section 3
+→ PersonA-Report.txt - Cracking & timing sections
+→ Refer to Artifacts package for raw data
+
+Salt/Pepper Effects:
+→ PersonA-Report.txt - Salt & Pepper Analysis
+→ PersonA-Task-Completion-Report.txt - Task 3
+
+MFA Comparison (HOTP vs TOTP vs FIDO2):
+→ PersonB-Report.txt - Section 1.2 and Section 3
+→ PersonB-Task-Completion-Summary.txt - Tasks 1-2
+
+Mitigations & Deployment Recommendations:
+→ PersonB-Report.txt - Section 4
+→ PersonA-Report.txt - HMAC section
+
+Demo Evidence:
+→ Reference artifacts package for screenshots and logs
+→ MITM logs show TOTP relay success vs WebAuthn failure
+EOF
+
+
+Option C - Create Consolidated Report:
+  
+  # Combine all reports into single master document
+  cat > Lab3_Master_Report.txt << 'EOF'
+================================================================================
+                 LAB3 AUTHENTICATION SECURITY PROJECT
+                        COMPREHENSIVE REPORT
+================================================================================
+
+This report consolidates findings from both Person A and Person B's work
+on the authentication security implementation and attack analysis project.
+
+TABLE OF CONTENTS:
+1. Project Overview
+2. Person A: Core API & Security Foundations
+3. Person B: MFA, Attacks & Mitigations
+4. Experimental Results & Analysis
+5. Conclusions & Recommendations
+
+================================================================================
+SECTION 1: PROJECT OVERVIEW
+================================================================================
+EOF
+  
+  cat README.txt >> Lab3_Master_Report.txt
+  
+  echo -e "\n\n" >> Lab3_Master_Report.txt
+  echo "================================================================================" >> Lab3_Master_Report.txt
+  echo "SECTION 2: PERSON A - CORE API & SECURITY FOUNDATIONS" >> Lab3_Master_Report.txt
+  echo "================================================================================" >> Lab3_Master_Report.txt
+  
+  cat PersonA-Report.txt >> Lab3_Master_Report.txt
+  
+  echo -e "\n\n" >> Lab3_Master_Report.txt
+  echo "================================================================================" >> Lab3_Master_Report.txt
+  echo "SECTION 3: PERSON B - MFA, ATTACKS & MITIGATIONS" >> Lab3_Master_Report.txt
+  echo "================================================================================" >> Lab3_Master_Report.txt
+  
+  cat PersonB-Report.txt >> Lab3_Master_Report.txt
+  
+  echo -e "\n\n" >> Lab3_Master_Report.txt
+  echo "================================================================================" >> Lab3_Master_Report.txt
+  echo "SECTION 4: COMPLETION ANALYSIS" >> Lab3_Master_Report.txt
+  echo "================================================================================" >> Lab3_Master_Report.txt
+  
+  cat PersonA-Task-Completion-Report.txt >> Lab3_Master_Report.txt
+  cat PersonB-Task-Completion-Summary.txt >> Lab3_Master_Report.txt
+
+
+VERIFICATION:
+---------------------------------------------------------------------------
+Ensure the package includes:
+  ✓ Experiment setup documentation
+  ✓ Attack results with success rates and timings
+  ✓ Salt/pepper analysis
+  ✓ MFA comparison (HOTP/TOTP/FIDO2)
+  ✓ Mitigation strategies
+  ✓ Deployment recommendations
+  ✓ Demo evidence references
+
+
+================================================================================
+                    COMPLETE DELIVERABLE CHECKLIST
+================================================================================
+
+DELIVERABLE #1: CODE ✓
+---------------------------------------------------------------------------
+Files to Package:
+  [ ] PersonA-app.py
+  [ ] PersonB-integrated_app.py
+  [ ] PersonB-mfa_totp.py
+  [ ] PersonB-mfa_hotp.py
+  [ ] PersonB-fido2_webauthn.py
+  [ ] PersonA-crack_passwords.py
+  [ ] PersonA-timing_attack.py
+  [ ] PersonB-dictionary_attack.py
+  [ ] PersonB-mitm_proxy.py
+  [ ] PersonA-testing.py
+  [ ] README.txt
+  [ ] EXECUTION-GUIDE.txt
+  [ ] Assigment-PersonA-PersonB.txt
+
+Verification:
+  [ ] All Python files present
+  [ ] Documentation included
+  [ ] Dependencies listed in README
+  [ ] Execution instructions provided
+
+
+DELIVERABLE #2: ARTIFACTS ✓
+---------------------------------------------------------------------------
+Files to Generate & Package:
+  [ ] QR code images (qr_*.png)
+  [ ] webauthn_logs.json
+  [ ] mitm_logs.json
+  [ ] cracking_report.txt
+  [ ] timing_attack_results.txt
+  [ ] totp_stats.json
+  [ ] hotp_stats.json
+  [ ] artifacts_users.db
+
+Verification:
+  [ ] All artifacts generated by running code
+  [ ] QR codes are valid PNG images
+  [ ] JSON files are well-formed
+  [ ] Logs contain meaningful data
+  [ ] Database contains test users
+
+
+DELIVERABLE #3: REPORT ✓
+---------------------------------------------------------------------------
+Files to Package:
+  [ ] PersonA-Report.txt
+  [ ] PersonB-Report.txt
+  [ ] PersonA-Task-Completion-Report.txt
+  [ ] PersonB-Task-Completion-Summary.txt
+  [ ] PersonA.txt
+  [ ] README.txt
+  
+Optional:
+  [ ] REPORT_INDEX.txt (reading guide)
+  [ ] Lab3_Master_Report.txt (consolidated)
+
+Verification:
+  [ ] Covers experiment setup
+  [ ] Includes attack results
+  [ ] Analyzes salt/pepper effects
+  [ ] Compares MFA methods
+  [ ] Provides mitigation strategies
+  [ ] References demo evidence
+
+
+================================================================================
+                    QUICK DELIVERY COMMANDS
+================================================================================
+
+STEP 1: Create all three deliverables at once
+---------------------------------------------------------------------------
+
+cd /home/steven/Desktop/on-going-project/v1-D7076E-Lab3
+
+# Create Code deliverable
+zip -r Lab3_Code_Deliverable.zip \
+  PersonA-app.py PersonB-integrated_app.py \
+  PersonB-mfa_totp.py PersonB-mfa_hotp.py PersonB-fido2_webauthn.py \
+  PersonA-crack_passwords.py PersonA-timing_attack.py \
+  PersonB-dictionary_attack.py PersonB-mitm_proxy.py \
+  PersonA-testing.py \
+  README.txt EXECUTION-GUIDE.txt Assigment-PersonA-PersonB.txt
+
+# Generate artifacts (run the necessary scripts first)
+# Then package artifacts
+zip -r Lab3_Artifacts_Deliverable.zip \
+  qr_*.png *_logs.json *_stats.json \
+  cracking_report.txt timing_attack_results.txt \
+  users.db
+
+# Create Report deliverable
+zip -r Lab3_Report_Deliverable.zip \
+  PersonA-Report.txt PersonB-Report.txt \
+  PersonA-Task-Completion-Report.txt PersonB-Task-Completion-Summary.txt \
+  PersonA.txt README.txt
+
+
+STEP 2: Verify deliverables
+---------------------------------------------------------------------------
+
+ls -lh Lab3_*_Deliverable.zip
+
+unzip -l Lab3_Code_Deliverable.zip
+unzip -l Lab3_Artifacts_Deliverable.zip
+unzip -l Lab3_Report_Deliverable.zip
+
+
+STEP 3: Create master submission package (optional)
+---------------------------------------------------------------------------
+
+mkdir Lab3_Complete_Submission
+mv Lab3_*_Deliverable.zip Lab3_Complete_Submission/
+
+cat > Lab3_Complete_Submission/SUBMISSION_README.txt << 'EOF'
+LAB3 AUTHENTICATION SECURITY PROJECT - COMPLETE SUBMISSION
+===========================================================
+
+This submission contains three required deliverables:
+
+1. Lab3_Code_Deliverable.zip
+   - All Python implementation files
+   - Attack and testing scripts
+   - Documentation and execution guides
+
+2. Lab3_Artifacts_Deliverable.zip
+   - Generated QR codes for TOTP
+   - WebAuthn registration traces
+   - MITM/relay logs
+   - Password cracking results
+   - Timing attack measurements
+   - MFA statistics
+
+3. Lab3_Report_Deliverable.zip
+   - Comprehensive analysis reports
+   - Experiment setup and results
+   - Salt/pepper analysis
+   - MFA comparison
+   - Security recommendations
+
+Extract each ZIP file to access the contents.
+Refer to README.txt and EXECUTION-GUIDE.txt in the Code deliverable
+for instructions on running the system.
+EOF
+
+zip -r Lab3_Complete_Submission.zip Lab3_Complete_Submission/
+
+
+================================================================================
+                            FINAL NOTES
+================================================================================
+
+IMPORTANT REMINDERS:
+---------------------------------------------------------------------------
+
+1. Generate artifacts BEFORE packaging them
+   - Run all Python scripts to create logs, stats, and outputs
+   - Capture timing attack output to text file
+   - Ensure database contains test data
+
+2. Test code package independently
+   - Extract to fresh directory
+   - Install dependencies: pip install flask bcrypt argon2-cffi pyotp qrcode pillow fido2 requests
+   - Verify all scripts run successfully
+
+3. Report references artifacts
+   - Ensure artifact filenames match report references
+   - Include screenshots of key demonstrations if required
+   - Cross-reference between report and artifact files
+
+4. All assignment requirements are covered
+   - Flask REST API ✓
+   - 4 password hashing algorithms ✓
+   - Salt & pepper ✓
+   - HMAC integrity ✓
+   - TOTP & HOTP ✓
+   - FIDO2/WebAuthn ✓
+   - Password cracking ✓
+   - Timing attacks ✓
+   - MITM relay ✓
+
+5. File organization matches assignment split
+   - Person A: Core API & Security Foundations
+   - Person B: MFA, Attacks & Mitigations
+   - All tasks completed and documented
+
+
+================================================================================
+                            END OF GUIDE
+================================================================================
