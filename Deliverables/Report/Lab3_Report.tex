@@ -1,0 +1,69 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{enumitem}
+
+% Page setup
+\geometry{margin=1in}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Lab 3: Authentication Security}
+\lhead{Person A \& Person B}
+\rfoot{Page \thepage}
+
+% Code listing setup
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    backgroundcolor=\color{gray!10}
+}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+% Title information
+\title{\textbf{Lab 3: Authentication Security\\From Password Storage to FIDO2/WebAuthn}}
+\author{Person A \& Person B\\
+Course: Authentication Security\\
+Date: \today}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+This report presents a comprehensive study of authentication security mechanisms, from traditional password hashing schemes to modern multi-factor authentication (MFA) using FIDO2/WebAuthn. We implemented and analyzed four password hashing algorithms (SHA-256, SHA-3, bcrypt, and Argon2), three MFA methods (TOTP, HOTP, and WebAuthn), and demonstrated various security attacks including password cracking, timing attacks, and man-in-the-middle (MITM) relay attacks. Our findings show that Argon2 provides the best resistance to password cracking attacks, constant-time comparison effectively mitigates timing attacks, and WebAuthn's origin binding successfully prevents MITM relay attacks that compromise traditional OTP-based MFA. This work provides practical insights into authentication security best practices and the importance of defense-in-depth strategies.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\end{document}
