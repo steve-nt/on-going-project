@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go-Reloaded</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+        .slide {
+            width: 100%;
+            height: 100vh;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 4rem;
+            text-align: center;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.5s ease-in-out;
+            opacity: 0;
+        }
+        .slide.active {
+            display: flex;
+            opacity: 1;
+            z-index: 10;
+        }
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #4ade80; /* Green 400 */
+        }
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            border-bottom: 3px solid #4ade80;
+            padding-bottom: 0.5rem;
+        }
+        p {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            max-width: 800px;
+            margin-bottom: 1.5rem;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            font-size: 1.25rem;
+            text-align: left;
+            max-width: 700px;
+        }
+        li {
+            margin-bottom: 1rem;
+            position: relative;
+            padding-left: 2rem;
+        }
+        li::before {
+            content: '🚀';
+            position: absolute;
+            left: 0;
+            top: 2px;
+        }
+        code {
+            background-color: #333;
+            color: #f0f0f0;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.375rem;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+        .nav-button {
+            position: fixed;
+            bottom: 2rem;
+            z-index: 20;
+            background-color: rgba(74, 222, 128, 0.8);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 50%;
+            width: 3.5rem;
+            height: 3.5rem;
+            font-size: 2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+        }
+        .nav-button:hover {
+            background-color: rgba(74, 222, 128, 1);
+        }
+        #prev {
+            left: 2rem;
+        }
+        #next {
+            right: 2rem;
+        }
+        #slide-counter {
+            position: fixed;
+            bottom: 2.8rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-size: 1rem;
+        }
+        .diagram {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            font-family: monospace;
+            color: #e0e0e0;
+        }
+        .example-box {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 900px;
+            margin-top: 2rem;
+        }
+        .example {
+            background-color: #2a2a2a;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            width: 45%;
+        }
+        .example-before { color: #f87171; }
+        .example-after { color: #4ade80; }
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 overflow-hidden">
+
+    <!-- Slide 1: Title -->
+    <div id="slide-1" class="slide active">
+        <div class="icon">🚀</div>
+        <h1>Go-Reloaded</h1>
+        <p class="text-gray-400">From Zero to Logic</p>
+    </div>
+
+    <!-- Slide 2: Agenda -->
+    <div id="slide-2" class="slide">
+        <h2>Agenda for Today</h2>
+        <ul>
+            <br>
+            <li>What is <code>go-reloaded</code>? (The Goal)</li>
+            <li>Two Ways to Build It (The Architectures)</li>
+            <li>Your 1-Week Mission (The Plan)</li>
+            <li>Team Formation & Q&A</li>
+        </ul>
+    </div>
+
+    <!-- Slide 3: What is go-reloaded? -->
+    <div id="slide-3" class="slide">
+        <h2>What is <code>go-reloaded</code>?</h2>
+        <div class="diagram text-xl">
+            [input.txt] &nbsp; → &nbsp; [go-reloaded tool] &nbsp; → &nbsp; [output.txt]
+        </div>
+        <p class="mt-8">A command-line tool built in Go that does three things:</p>
+        <p class="font-semibold text-2xl text-green-300">Read → Transform → Write</p>
+        <p>The entire challenge is in the logic. Your goal is a tool that is clean, well-structured, and produces a **100% exact match** to the expected output.</p>
+    </div>
+
+    <!-- Slide 4: The Transformation Rules -->
+    <div id="slide-4" class="slide">
+        <h2>The Transformation Rules</h2>
+        <p>A few examples of the logic you will implement.</p>
+        <div class="space-y-4 text-left max-w-4xl w-full text-lg">
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-gray-400 font-semibold">Number Conversion:</p>
+                <p><span class="example-before">1E (hex) and 10 (bin)</span> → <span class="example-after">30 and 2</span></p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-gray-400 font-semibold">Text Casing:</p>
+                <p><span class="example-before">This is so exciting (up, 2)</span> → <span class="example-after">This is SO EXCITING</span></p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-gray-400 font-semibold">Punctuation & Quotes:</p>
+                <p><span class="example-before">' I am a optimist , '</span> → <span class="example-after">'I am an optimist,'</span></p>
+            </div>
+        </div>
+        <p class="mt-6">The key is turning a written specification into flawless, working code.</p>
+    </div>
+
+    <!-- Slide 5: Two Ways to Build It -->
+    <div id="slide-5" class="slide">
+        <h2>Two Ways to Build It 🏛️</h2>
+        <p>We'll focus on two powerful mental models for solving this problem.</p>
+        <div class="example-box">
+            <div class="example">
+                <div class="icon">🚗</div>
+                <h3 class="text-2xl font-semibold mb-2 text-green-300">The Pipeline</h3>
+                <p>"Car Wash" Approach</p>
+            </div>
+            <div class="example">
+                <div class="icon">🏭</div>
+                <h3 class="text-2xl font-semibold mb-2 text-green-300">The Streaming FSM</h3>
+                <p>"Conveyor Belt" Approach</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: The Pipeline -->
+    <div id="slide-6" class="slide">
+        <h2>The Pipeline ("Car Wash") Approach</h2>
+        <p>This model is all about **separation of concerns**.</p>
+        <div class="diagram text-lg my-4">
+            Input → [Tokenize] → [Numbers] → [Casing] → [Articles] → [Format] → Output
+        </div>
+        <div class="text-left max-w-2xl">
+            <p><strong>Great for:</strong></p>
+            <ul>
+                <li><strong>Simplicity:</strong> Each station is a small, pure, testable function.</li>
+                <li><strong>Teamwork:</strong> Easily split the work. One person owns one station.</li>
+                <li><strong>Iteration:</strong> Need a new rule? Just add a new station to the line.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Slide 7: The Streaming FSM -->
+    <div id="slide-7" class="slide">
+        <h2>The Streaming FSM ("Conveyor Belt")</h2>
+        <p>This model is built for **efficiency**.</p>
+        <div class="flex items-center justify-center my-4 space-x-8">
+            <div class="icon text-6xl">🏭</div>
+            <div class="text-3xl font-mono text-gray-400">→ → → → → → →</div>
+            <p class="text-xl">Single Pass Processing</p>
+        </div>
+        <div class="text-left max-w-2xl">
+            <p><strong>Great for:</strong></p>
+            <ul>
+                <li><strong>Performance:</strong> Makes a single pass over the data. Super fast.</li>
+                <li><strong>Low Memory:</strong> Doesn't need to hold the whole file. Ideal for huge files.</li>
+                <li><strong>Precision:</strong> Behavior is very explicit and controlled.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Slide 8: Your Mission -->
+    <div id="slide-8" class="slide">
+        <h2>Your Mission: The 1-Week Study Plan 🗺️</h2>
+        <p class="mb-6">Before writing any code, your mission is to **think, plan, and analyze.**</p>
+        <p class="bg-yellow-900 text-yellow-200 p-3 rounded-lg text-2xl font-bold">⚠️ NO CODING THIS WEEK! ⚠️</p>
+        <p class="mt-6">By the end of the week, you will produce:</p>
+        <ul class="text-xl">
+            <br>
+            <li>An Analysis Document (rules, edge cases).</li>
+            <li>A "Golden" Test Set (your source of truth).</li>
+            <li>A Skeleton Plan.</li>
+        </ul>
+    </div>
+    
+    <!-- Slide 9: Let's Get Started -->
+    <div id="slide-9" class="slide">
+        <h2>Let's Get Started</h2>
+        <p>We are splitting the cohort into **two groups**.</p>
+        <div class="example-box">
+             <div class="example">
+                <h3 class="text-2xl font-semibold mb-2 text-green-300">Group 1</h3>
+                <p>Bocal: [Thanos+Panos]</p>
+            </div>
+            <div class="example">
+                <h3 class="text-2xl font-semibold mb-2 text-green-300">Group 2</h3>
+                <p>Bocal: [Nikolas]</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 10: Q&A -->
+    <div id="slide-10" class="slide">
+        <div class="icon">❓</div>
+        <h2>Q & A</h2>
+        <p>What are your questions?</p>
+        <p class="text-gray-400">Ask about rules, architectures, the plan, or the project goal.</p>
+    </div>
+
+    <!-- Slide 11: Thank You -->
+    <div id="slide-11" class="slide">
+        <h1>Thank You!</h1>
+        <p>Study & Algorithms channel on Element will be your guide.</p>
+        <p class="mt-8 text-2xl font-semibold">Welcome to Zone01!!</p>
+    </div>
+
+
+    <!-- Navigation -->
+    <button id="prev" class="nav-button">‹</button>
+    <button id="next" class="nav-button">›</button>
+    <div id="slide-counter"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slides = document.querySelectorAll('.slide');
+            const prevButton = document.getElementById('prev');
+            const nextButton = document.getElementById('next');
+            const slideCounter = document.getElementById('slide-counter');
+            let currentSlide = 0;
+
+            function showSlide(index) {
+                slides.forEach((slide, i) => {
+                    if (i === index) {
+                        slide.classList.add('active');
+                    } else {
+                        slide.classList.remove('active');
+                    }
+                });
+                updateNav();
+            }
+
+            function updateNav() {
+                // Update slide counter
+                slideCounter.textContent = `${currentSlide + 1} / ${slides.length}`;
+
+                // Update button visibility
+                if (currentSlide === 0) {
+                    prevButton.style.display = 'none';
+                } else {
+                    prevButton.style.display = 'flex';
+                }
+
+                if (currentSlide === slides.length - 1) {
+                    nextButton.style.display = 'none';
+                } else {
+                    nextButton.style.display = 'flex';
+                }
+            }
+
+            function nextSlide() {
+                if (currentSlide < slides.length - 1) {
+                    currentSlide++;
+                    showSlide(currentSlide);
+                }
+            }
+
+            function prevSlide() {
+                if (currentSlide > 0) {
+                    currentSlide--;
+                    showSlide(currentSlide);
+                }
+            }
+
+            nextButton.addEventListener('click', nextSlide);
+            prevButton.addEventListener('click', prevSlide);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight' || e.key === ' ') {
+                    e.preventDefault();
+                    nextSlide();
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    prevSlide();
+                }
+            });
+            
+            // Initialize
+            showSlide(currentSlide);
+        });
+    </script>
+</body>
+</html>
+
+
