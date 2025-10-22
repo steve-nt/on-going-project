@@ -1,0 +1,2327 @@
+================================================================================
+               NOTIFICATIONS IMPLEMENTATION - QUICK DECISION GUIDE
+================================================================================
+
+QUESTION: Can I implement notifications without comments/votes?
+
+ANSWER: YES and NO - Read below!
+
+================================================================================
+                           TWO IMPLEMENTATION PATHS
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    OPTION 1: NOTIFICATION SYSTEM ONLY                   │
+│                         (Phases 1-4, No Integration)                    │
+└─────────────────────────────────────────────────────────────────────────┘
+
+✅ WHAT YOU BUILD:
+  - notifications table in database
+  - Notification domain entity
+  - Repository interface & implementation
+  - Application layer (queries & commands)
+  - HTTP handlers & API endpoints
+  - Complete CRUD for notifications
+
+✅ WHAT WORKS:
+  - GET /notifications (fetch user's notifications)
+  - GET /notifications/unread-count (badge counter)
+  - POST /notifications/mark-read (mark one as read)
+  - POST /notifications/mark-all-read (clear all)
+
+❌ WHAT DOESN'T WORK:
+  - No automatic notification creation
+  - Nothing triggers notifications
+  - Can't test with real user actions
+  - Must create notifications manually via API
+
+⏱️  TIME: 3-4 days
+📚 COMPLEXITY: Medium
+🎓 PREREQUISITES: 
+  - Basic Go knowledge
+  - Clean Architecture understanding
+  - Comfortable with interfaces
+  - Middleware concepts
+
+📝 USE CASE:
+  "I want to learn and build the notification infrastructure first.
+   I'll add integration with comments/votes later."
+
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                OPTION 2: COMPLETE WITH INTEGRATION                      │
+│                    (All Phases, Production Ready)                       │
+└─────────────────────────────────────────────────────────────────────────┘
+
+✅ WHAT YOU BUILD:
+  - Everything from Option 1
+  - Integration with existing features
+  - Notification service layer
+  - Event triggers in use cases
+  - Complete end-to-end flow
+
+✅ WHAT WORKS:
+  - Everything from Option 1
+  - Automatic notifications when:
+    * Someone comments on your post
+    * Someone likes your post
+    * Someone dislikes your post  
+    * Someone likes your comment
+    * Someone dislikes your comment
+  - Real-time notification generation
+  - Complete user experience
+
+⏱️  TIME: 5-7 days
+📚 COMPLEXITY: Hard (Advanced)
+🎓 PREREQUISITES:
+  ✅ Comments system FULLY implemented
+  ✅ Voting/likes system FULLY implemented
+  ✅ Understanding of existing use cases
+  ✅ Comfortable modifying handlers
+
+📝 USE CASE:
+  "I have comments and voting working. I want complete notifications 
+   that work automatically when users interact."
+
+
+================================================================================
+                              DECISION TREE
+================================================================================
+
+START HERE:
+┃
+┃ ❓ Do you have COMMENTS feature implemented?
+┃
+┣━━ ❌ NO
+┃    │
+┃    └──→ CHOOSE OPTION 1
+┃         - Build notification infrastructure
+┃         - Test manually via Postman
+┃         - Add integration later when comments exist
+┃
+┗━━ ✅ YES
+     │
+     ❓ Do you have VOTING/LIKES feature implemented?
+     │
+     ┣━━ ❌ NO
+     ┃    │
+     ┃    └──→ CHOOSE OPTION 1
+     ┃         - Build notifications
+     ┃         - Integrate with comments only
+     ┃         - Add voting integration later
+     ┃
+     ┗━━ ✅ YES
+          │
+          ❓ Do you want to learn step-by-step?
+          │
+          ┣━━ ✅ YES
+          ┃    │
+          ┃    └──→ START WITH OPTION 1
+          ┃         Then upgrade to OPTION 2
+          ┃
+          ┗━━ ❌ NO
+               │
+               └──→ GO STRAIGHT TO OPTION 2
+                    Build complete system
+
+
+================================================================================
+                           TESTING STRATEGIES
+================================================================================
+
+FOR OPTION 1 (No Integration):
+------------------------------
+
+Since notifications aren't automatically created, you need to:
+
+1. Add a temporary testing endpoint:
+   POST /api/v1/notifications/create (admin/test only)
+   
+2. Manually create notifications via Postman:
+   {
+     "recipientId": "user-uuid",
+     "actorId": "actor-uuid", 
+     "notificationType": "COMMENT_ON_TOPIC",
+     "topicId": 1,
+     "message": "Test: bob commented on your post"
+   }
+
+3. Then test:
+   - Fetching notifications
+   - Marking as read
+   - Unread counts
+   - Pagination
+
+⚠️  Remove testing endpoint in production!
+
+
+FOR OPTION 2 (With Integration):
+--------------------------------
+
+Full end-to-end testing:
+
+1. Register two users (Alice, Bob)
+2. Alice creates a topic
+3. Bob comments on Alice's topic → Notification created automatically!
+4. Alice checks notifications → Should see Bob's comment
+5. Alice marks as read
+6. Bob likes Alice's topic → Another notification!
+7. Test complete flow
+
+See Section 9 of notifications-guide.txt for complete Postman tests.
+
+
+================================================================================
+                        UPGRADE PATH (Option 1 → 2)
+================================================================================
+
+If you start with Option 1, here's how to upgrade later:
+
+STEP 1: Keep Everything You Built
+----------------------------------
+✓ Database table (no changes needed)
+✓ Domain layer (no changes)
+✓ Repository (no changes)
+✓ Application layer (no changes)
+✓ HTTP handlers (no changes)
+
+STEP 2: Add These New Components
+---------------------------------
+1. Create NotificationService (app/notifications/service/)
+2. Wire service into existing handlers:
+   - In createComment handler, add notification trigger
+   - In voteOnTopic handler, add notification trigger
+   - In voteOnComment handler, add notification trigger
+
+STEP 3: Update Services Registration
+-------------------------------------
+- Pass NotificationService to command handlers
+- Update NewServices() to create and inject service
+
+That's it! Just add the integration layer.
+Time to upgrade: 1-2 days
+
+
+================================================================================
+                              RECOMMENDATIONS
+================================================================================
+
+SCENARIO 1: You're a beginner
+------------------------------
+→ Start with OPTION 1
+  - Learn notification system in isolation
+  - Master the patterns first
+  - Less complexity to debug
+  - Upgrade to Option 2 later
+
+SCENARIO 2: You have all prerequisites
+---------------------------------------
+→ Go with OPTION 2
+  - Complete system from the start
+  - Better testing experience
+  - Production-ready immediately
+  - No need to come back later
+
+SCENARIO 3: Comments exist, votes don't
+----------------------------------------
+→ Start with OPTION 1
+  - Build full notification system
+  - Integrate ONLY with comments (modify Phase 5)
+  - Add voting integration when ready
+  - Partial but working system
+
+SCENARIO 4: Time constrained
+-----------------------------
+→ OPTION 1 if time is very limited
+  - Build infrastructure (3-4 days)
+  - Deliver something working
+  - Schedule integration for later sprint
+
+
+================================================================================
+                            KNOWLEDGE GAPS?
+================================================================================
+
+If you're missing knowledge, here's what to learn first:
+
+ESSENTIAL (Can't proceed without):
+-----------------------------------
+- Go interfaces and implementation
+- Foreign keys in SQLite
+- HTTP request/response handling
+- Middleware patterns
+- Context passing
+
+Study these files in your project:
+- internal/domain/topic/repository.go (interface example)
+- internal/infra/storage/sqlite/topics/topicRepo.go (implementation)
+- internal/infra/middleware/requireAuthorization.go (middleware)
+
+ADVANCED (Only for Option 2):
+------------------------------
+- Event-driven architecture
+- Service layer pattern
+- Dependency injection
+- Integration testing
+
+Study these:
+- internal/app/services.go (service wiring)
+- How createTopic handler works end-to-end
+- How dependencies are passed
+
+
+================================================================================
+                            FINAL DECISION
+================================================================================
+
+I RECOMMEND OPTION 1 IF:
+------------------------
+□ You don't have comments/votes implemented
+□ You want to learn step by step
+□ You prefer to build infrastructure first
+□ You're not in a rush
+□ You want simpler debugging
+
+I RECOMMEND OPTION 2 IF:
+------------------------
+□ You have comments AND votes working
+□ You understand the existing patterns
+□ You want a complete working system
+□ You're comfortable with complexity
+□ You need it production-ready now
+
+
+STILL UNSURE?
+-------------
+→ Start with OPTION 1
+→ It's easier to upgrade than to downgrade
+→ You'll learn more by building incrementally
+→ Less risk of getting stuck
+
+
+================================================================================
+                          WHERE TO START
+================================================================================
+
+CHOSEN OPTION 1?
+----------------
+Open: notifications-guide.txt
+Skip: Phase 5 (Integration)
+Focus: Phases 1-4 only
+Start: Section 5, Phase 1 (Database & Domain)
+
+CHOSEN OPTION 2?
+----------------
+Open: notifications-guide.txt
+Follow: All phases (1-6)
+Start: Section 2 (Prerequisites check)
+Then: Section 5, Phase 1 (Database & Domain)
+
+
+Need help deciding? Ask these questions:
+1. "Do I have working comments?" (Check with curl/Postman)
+2. "Do I have working votes?" (Check with curl/Postman)
+3. "How much time do I have?" (3-4 days vs 5-7 days)
+4. "Am I comfortable with the existing code?" (Review services.go)
+
+
+Good luck with your implementation! 🚀
+
+================================================================================
+                              END OF GUIDE
+================================================================================
+
+
+
+================================================================================
+                  NOTIFICATIONS SYSTEM IMPLEMENTATION GUIDE
+                         Complete Step-by-Step Tutorial
+================================================================================
+
+PROJECT: Running Forum
+FEATURE: Real-time Notifications System
+DIFFICULTY: Hard (Advanced Feature)
+ESTIMATED TIME: 5-7 days
+ARCHITECTURE: Clean Architecture + Event-Driven Design
+
+================================================================================
+                              TABLE OF CONTENTS
+================================================================================
+
+1. Overview & Architecture
+2. Prerequisites  
+3. Database Schema Design
+4. Implementation Phases (6 Phases)
+5. Detailed Implementation Steps
+6. Integration with Existing Features
+7. API Documentation
+8. Testing Guide
+9. Advanced Features (Optional)
+10. Quick Reference
+
+================================================================================
+                        1. OVERVIEW & ARCHITECTURE
+================================================================================
+
+WHAT YOU'RE BUILDING:
+--------------------
+A notification system that alerts users when:
+✓ Someone comments on their topic/post
+✓ Someone likes/dislikes their topic
+✓ Someone replies to their comment (if comments support threading)
+✓ Someone likes/dislikes their comment
+
+NOTIFICATION TYPES:
+------------------
+1. COMMENT_ON_TOPIC - "User X commented on your post 'Title'"
+2. LIKE_ON_TOPIC - "User X liked your post 'Title'"
+3. DISLIKE_ON_TOPIC - "User X disliked your post 'Title'"
+4. LIKE_ON_COMMENT - "User X liked your comment"
+5. DISLIKE_ON_COMMENT - "User X disliked your comment"
+
+ARCHITECTURE FLOW:
+-----------------
+User Action (comment/like/dislike)
+    → Event Triggered in Use Case
+        → Notification Service Creates Notification
+            → Stored in Database
+                → User Fetches via API
+                    → User Marks as Read
+
+KEY COMPONENTS:
+--------------
+1. Database: notifications table
+2. Domain: Notification entity + Repository interface
+3. Application: NotificationService + Use cases
+4. Infrastructure: SQLite implementation + HTTP handlers
+5. Integration: Hook into existing comment/vote handlers
+
+================================================================================
+                     2. PREREQUISITES & UNDERSTANDING
+================================================================================
+
+CRITICAL QUESTION: Can I implement notifications without comments/votes?
+------------------------------------------------------------------------
+✅ YES! You can implement the notification SYSTEM without comments/votes.
+❌ NO! You cannot TEST/USE notifications without something to trigger them.
+
+IMPLEMENTATION OPTIONS:
+----------------------
+
+OPTION 1: IMPLEMENT NOTIFICATION SYSTEM ONLY (Phases 1-4)
+----------------------------------------------------------
+What you'll build:
+✓ Database table for notifications
+✓ Domain layer (entity + repository interface)
+✓ Repository implementation (CRUD operations)
+✓ Application layer (services + use cases)
+✓ HTTP handlers (API endpoints)
+✓ Complete notification management
+
+What you CAN do:
+✓ Get notifications (GET /notifications)
+✓ Get unread count (GET /notifications/unread-count)
+✓ Mark as read (POST /notifications/mark-read)
+✓ Mark all as read (POST /notifications/mark-all-read)
+
+What you CANNOT do (yet):
+❌ Actually CREATE notifications (nothing triggers them)
+❌ Test comment notifications (no comments feature)
+❌ Test voting notifications (no voting feature)
+
+Requirements for Option 1:
+- Basic Go knowledge
+- Understanding of Clean Architecture pattern
+- Comfortable with interfaces
+- Understanding of middleware (for authentication)
+
+Time: 3-4 days (Phases 1-4 only)
+
+
+OPTION 2: IMPLEMENT NOTIFICATIONS + INTEGRATION (Complete)
+-----------------------------------------------------------
+What you'll build:
+✓ Everything from Option 1
+✓ Integration with existing features
+✓ Event triggers in comment/vote handlers
+✓ Full end-to-end notification flow
+
+What you CAN do:
+✓ Everything from Option 1
+✓ Automatically create notifications when:
+  - Someone comments on your post
+  - Someone likes/dislikes your post
+  - Someone likes/dislikes your comment
+✓ Complete notification experience
+
+Requirements for Option 2:
+✓ Comments system is fully implemented
+✓ Voting/likes system is fully implemented
+✓ Understanding of existing use case patterns
+✓ Comfortable modifying existing handlers
+
+Time: 5-7 days (All phases including integration)
+
+
+RECOMMENDED APPROACH:
+--------------------
+
+If comments/votes DON'T exist yet:
+1. ✅ Implement notifications system (Phases 1-4)
+2. ✅ Test API endpoints manually (create notifications via Postman)
+3. ⏸️  Skip Phase 5 (Integration) for now
+4. ⏸️  Come back later to add integration when features exist
+
+If comments/votes DO exist:
+1. ✅ Implement complete notifications (All phases)
+2. ✅ Integrate with existing features
+3. ✅ Test end-to-end with real user actions
+
+
+MANUAL NOTIFICATION CREATION (For Testing Without Integration):
+---------------------------------------------------------------
+
+If you implement Phases 1-4 only, you can manually create notifications
+via direct API call for testing:
+
+You would need to add a temporary endpoint:
+POST /api/v1/notifications/create (for testing only)
+Body: {
+    "recipientId": "user-uuid",
+    "actorId": "actor-uuid",
+    "notificationType": "COMMENT_ON_TOPIC",
+    "topicId": 1,
+    "message": "Test notification"
+}
+
+Then you can test:
+- Get notifications
+- Mark as read
+- Unread counts
+- Pagination
+
+Note: This is ONLY for testing. Real notifications should be created
+automatically through integration (Phase 5).
+
+
+KNOWLEDGE REQUIRED (MINIMUM):
+-----------------------------
+Essential for Phases 1-4:
+✓ Foreign key relationships (database constraints)
+✓ Nullable database fields (NULL handling in Go)
+✓ Repository pattern (already used in your project)
+✓ Interface definitions (Go interfaces)
+✓ Context usage (context.Context)
+✓ HTTP handlers (existing pattern in project)
+✓ Middleware (authentication required for endpoints)
+
+Advanced for Phase 5 (Integration):
+✓ Event-driven patterns (triggering notifications)
+✓ Service layer pattern (NotificationService)
+✓ Integration points (modifying existing handlers)
+✓ Dependency injection (passing services to handlers)
+
+
+TIME BREAKDOWN:
+--------------
+OPTION 1 (Notification System Only):
+Day 1: Database schema + domain layer (2-3 hours)
+Day 2: Repository implementation (3-4 hours)
+Day 3: Application layer (4-5 hours)
+Day 4: HTTP handlers + routes (3-4 hours)
+Total: 3-4 days
+
+OPTION 2 (With Integration):
+Day 1-4: Same as Option 1
+Day 5: Integration with comments/votes (4-5 hours)
+Day 6-7: Testing + fixes (6-8 hours)
+Total: 5-7 days
+
+
+DECISION MATRIX:
+---------------
+
+Do you have comments implemented? 
+  YES → Do you have voting implemented?
+         YES → Go with OPTION 2 (Complete implementation)
+         NO  → Go with OPTION 1 (Add vote integration later)
+  NO  → Go with OPTION 1 (Add integration when features exist)
+
+Do you want to learn the system first?
+  YES → Start with OPTION 1 (easier, focused)
+  NO  → Go straight to OPTION 2 (if prerequisites met)
+
+Do you need working notifications urgently?
+  YES → OPTION 2 required (needs something to trigger them)
+  NO  → OPTION 1 is fine (build infrastructure first)
+
+================================================================================
+                       3. DATABASE SCHEMA DESIGN
+================================================================================
+
+NOTIFICATIONS TABLE STRUCTURE:
+------------------------------
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    
+    -- Who receives this notification
+    recipient_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Who triggered it (NULL for system notifications)
+    actor_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Notification type
+    notification_type TEXT NOT NULL CHECK(notification_type IN (
+        'COMMENT_ON_TOPIC',
+        'LIKE_ON_TOPIC',
+        'DISLIKE_ON_TOPIC',
+        'LIKE_ON_COMMENT',
+        'DISLIKE_ON_COMMENT'
+    )),
+    
+    -- Related entities (nullable)
+    topic_id INTEGER REFERENCES topics(id) ON DELETE CASCADE,
+    comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    
+    -- Human-readable message
+    message TEXT NOT NULL,
+    
+    -- Read status
+    is_read BOOLEAN DEFAULT 0,
+    read_at DATETIME,
+    
+    -- Timestamp
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Performance indexes
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_read ON notifications(recipient_id, is_read);
+
+FIELD EXPLANATIONS:
+------------------
+- recipient_id: User who should see this notification
+- actor_id: User who performed the action (for "John liked...")
+- notification_type: Category of notification
+- topic_id/comment_id: Link to related content
+- message: "John commented on your post 'How to run?'"
+- is_read: Has user seen this notification?
+- read_at: When they marked it as read
+- created_at: When notification was created
+
+CASCADE DELETE BEHAVIOR:
+-----------------------
+- If user deleted → their notifications deleted
+- If topic deleted → notifications about that topic deleted
+- If comment deleted → notifications about that comment deleted
+
+================================================================================
+                     4. IMPLEMENTATION PHASES
+================================================================================
+
+PHASE 1: DATABASE & DOMAIN [Day 1 - 2-3 hours]
+-----------------------------------------------
+□ Add notifications table to schema.sql
+□ Create Notification domain entity
+□ Create Repository interface
+□ Define notification type constants
+
+PHASE 2: REPOSITORY IMPLEMENTATION [Day 2 - 3-4 hours]
+------------------------------------------------------
+□ Create error definitions
+□ Implement SQLite repository
+□ Handle nullable fields correctly
+□ Register in repositories factory
+□ Test basic CRUD operations
+
+PHASE 3: APPLICATION LAYER [Day 3 - 4-5 hours]
+----------------------------------------------
+□ Create NotificationService (business logic)
+□ Create query handlers (get notifications, count)
+□ Create command handlers (mark read, delete)
+□ Register in services
+
+PHASE 4: HTTP HANDLERS [Day 4 - 3-4 hours]
+------------------------------------------
+□ Create HTTP handlers for each endpoint
+□ Add validation rules
+□ Register routes in server
+□ Update main.go
+
+PHASE 5: INTEGRATION [Day 5 - 4-5 hours]
+----------------------------------------
+□ Hook into comment creation
+□ Hook into voting on topics
+□ Hook into voting on comments
+□ Test end-to-end notification flow
+
+PHASE 6: TESTING & POLISH [Day 6-7 - 6-8 hours]
+-----------------------------------------------
+□ Write unit tests
+□ Manual API testing with curl
+□ Database verification
+□ Fix bugs
+□ Optimize queries
+□ Documentation
+
+================================================================================
+                     5. DETAILED IMPLEMENTATION STEPS
+================================================================================
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    PHASE 1: DATABASE & DOMAIN LAYER                        ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1.1: Add Notifications Table
+---------------------------------
+
+FILE: db/migrations/schema.sql
+
+Add at the end:
+
+-- Notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recipient_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    actor_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    notification_type TEXT NOT NULL CHECK(notification_type IN (
+        'COMMENT_ON_TOPIC',
+        'LIKE_ON_TOPIC',
+        'DISLIKE_ON_TOPIC',
+        'LIKE_ON_COMMENT',
+        'DISLIKE_ON_COMMENT'
+    )),
+    topic_id INTEGER REFERENCES topics(id) ON DELETE CASCADE,
+    comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT 0,
+    read_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_read ON notifications(recipient_id, is_read);
+
+IMPORTANT: To apply this migration:
+- Delete db/data/forum.db
+- Restart server (it will recreate with new schema)
+
+
+STEP 1.2: Create Domain Entity
+------------------------------
+
+FILE: internal/domain/notification/notification.go
+
+package notification
+
+import "time"
+
+type NotificationType string
+
+const (
+    CommentOnTopic   NotificationType = "COMMENT_ON_TOPIC"
+    LikeOnTopic      NotificationType = "LIKE_ON_TOPIC"
+    DislikeOnTopic   NotificationType = "DISLIKE_ON_TOPIC"
+    LikeOnComment    NotificationType = "LIKE_ON_COMMENT"
+    DislikeOnComment NotificationType = "DISLIKE_ON_COMMENT"
+)
+
+type Notification struct {
+    ID               int              `json:"id"`
+    RecipientID      string           `json:"recipientId"`
+    ActorID          *string          `json:"actorId,omitempty"`
+    ActorUsername    string           `json:"actorUsername,omitempty"`
+    NotificationType NotificationType `json:"notificationType"`
+    TopicID          *int             `json:"topicId,omitempty"`
+    CommentID        *int             `json:"commentId,omitempty"`
+    Message          string           `json:"message"`
+    IsRead           bool             `json:"isRead"`
+    ReadAt           *time.Time       `json:"readAt,omitempty"`
+    CreatedAt        time.Time        `json:"createdAt"`
+}
+
+func (n *Notification) IsValid() bool {
+    return n.RecipientID != "" && n.NotificationType != "" && n.Message != ""
+}
+
+NOTE: Use pointers (*string, *int, *time.Time) for nullable fields
+
+
+STEP 1.3: Create Repository Interface
+-------------------------------------
+
+FILE: internal/domain/notification/repository.go
+
+package notification
+
+import "context"
+
+type Repository interface {
+    CreateNotification(ctx context.Context, notification *Notification) error
+    GetNotificationByID(ctx context.Context, notificationID int) (*Notification, error)
+    GetUserNotifications(ctx context.Context, userID string, page, limit int, unreadOnly bool) ([]Notification, error)
+    GetUnreadCount(ctx context.Context, userID string) (int, error)
+    MarkAsRead(ctx context.Context, notificationID int, userID string) error
+    MarkAllAsRead(ctx context.Context, userID string) error
+    DeleteNotification(ctx context.Context, notificationID int, userID string) error
+    GetTotalNotificationsCount(ctx context.Context, userID string, unreadOnly bool) (int, error)
+}
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                  PHASE 2: REPOSITORY IMPLEMENTATION                        ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 2.1: Create Errors
+-----------------------
+
+FILE: internal/infra/storage/sqlite/notifications/errors.go
+
+package notifications
+
+import "errors"
+
+var (
+    ErrNotificationNotFound = errors.New("notification not found")
+    ErrUnauthorized = errors.New("unauthorized to access this notification")
+    ErrInvalidNotificationType = errors.New("invalid notification type")
+)
+
+
+STEP 2.2: Implement Repository
+------------------------------
+
+FILE: internal/infra/storage/sqlite/notifications/notificationRepo.go
+
+package notifications
+
+import (
+    "context"
+    "database/sql"
+    "errors"
+    "fmt"
+    "time"
+    "github.com/arnald/forum/internal/domain/notification"
+)
+
+type Repo struct {
+    DB *sql.DB
+}
+
+func NewRepo(db *sql.DB) *Repo {
+    return &Repo{DB: db}
+}
+
+// CreateNotification inserts a new notification
+func (r *Repo) CreateNotification(ctx context.Context, notif *notification.Notification) error {
+    if !notif.IsValid() {
+        return errors.New("invalid notification data")
+    }
+
+    query := `
+        INSERT INTO notifications (
+            recipient_id, actor_id, notification_type,
+            topic_id, comment_id, message, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `
+
+    result, err := r.DB.ExecContext(
+        ctx, query,
+        notif.RecipientID,
+        notif.ActorID,
+        notif.NotificationType,
+        notif.TopicID,
+        notif.CommentID,
+        notif.Message,
+    )
+    if err != nil {
+        return fmt.Errorf("failed to create notification: %w", err)
+    }
+
+    id, _ := result.LastInsertId()
+    notif.ID = int(id)
+    notif.CreatedAt = time.Now()
+    return nil
+}
+
+// GetUserNotifications retrieves notifications with pagination
+func (r *Repo) GetUserNotifications(ctx context.Context, userID string, page, limit int, unreadOnly bool) ([]notification.Notification, error) {
+    offset := (page - 1) * limit
+
+    query := `
+        SELECT 
+            n.id, n.recipient_id, n.actor_id, n.notification_type,
+            n.topic_id, n.comment_id, n.message, n.is_read,
+            n.read_at, n.created_at,
+            COALESCE(u.username, '') as actor_username
+        FROM notifications n
+        LEFT JOIN users u ON n.actor_id = u.id
+        WHERE n.recipient_id = ?
+    `
+
+    if unreadOnly {
+        query += " AND n.is_read = 0"
+    }
+
+    query += " ORDER BY n.created_at DESC LIMIT ? OFFSET ?"
+
+    rows, err := r.DB.QueryContext(ctx, query, userID, limit, offset)
+    if err != nil {
+        return nil, fmt.Errorf("query failed: %w", err)
+    }
+    defer rows.Close()
+
+    notifications := make([]notification.Notification, 0)
+    for rows.Next() {
+        var notif notification.Notification
+        var actorID sql.NullString
+        var actorUsername sql.NullString
+        var topicID, commentID sql.NullInt64
+        var readAt sql.NullTime
+
+        err := rows.Scan(
+            &notif.ID, &notif.RecipientID, &actorID, &notif.NotificationType,
+            &topicID, &commentID, &notif.Message, &notif.IsRead,
+            &readAt, &notif.CreatedAt, &actorUsername,
+        )
+        if err != nil {
+            return nil, err
+        }
+
+        // Handle nullable fields
+        if actorID.Valid {
+            notif.ActorID = &actorID.String
+        }
+        if actorUsername.Valid {
+            notif.ActorUsername = actorUsername.String
+        }
+        if topicID.Valid {
+            id := int(topicID.Int64)
+            notif.TopicID = &id
+        }
+        if commentID.Valid {
+            id := int(commentID.Int64)
+            notif.CommentID = &id
+        }
+        if readAt.Valid {
+            notif.ReadAt = &readAt.Time
+        }
+
+        notifications = append(notifications, notif)
+    }
+
+    return notifications, rows.Err()
+}
+
+// GetUnreadCount returns count of unread notifications
+func (r *Repo) GetUnreadCount(ctx context.Context, userID string) (int, error) {
+    query := `SELECT COUNT(*) FROM notifications WHERE recipient_id = ? AND is_read = 0`
+    
+    var count int
+    err := r.DB.QueryRowContext(ctx, query, userID).Scan(&count)
+    return count, err
+}
+
+// MarkAsRead marks a notification as read
+func (r *Repo) MarkAsRead(ctx context.Context, notificationID int, userID string) error {
+    query := `
+        UPDATE notifications
+        SET is_read = 1, read_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND recipient_id = ? AND is_read = 0
+    `
+
+    result, err := r.DB.ExecContext(ctx, query, notificationID, userID)
+    if err != nil {
+        return err
+    }
+
+    rows, _ := result.RowsAffected()
+    if rows == 0 {
+        return ErrUnauthorized
+    }
+    return nil
+}
+
+// MarkAllAsRead marks all user's notifications as read
+func (r *Repo) MarkAllAsRead(ctx context.Context, userID string) error {
+    query := `
+        UPDATE notifications
+        SET is_read = 1, read_at = CURRENT_TIMESTAMP
+        WHERE recipient_id = ? AND is_read = 0
+    `
+
+    _, err := r.DB.ExecContext(ctx, query, userID)
+    return err
+}
+
+// DeleteNotification removes a notification
+func (r *Repo) DeleteNotification(ctx context.Context, notificationID int, userID string) error {
+    query := `DELETE FROM notifications WHERE id = ? AND recipient_id = ?`
+
+    result, err := r.DB.ExecContext(ctx, query, notificationID, userID)
+    if err != nil {
+        return err
+    }
+
+    rows, _ := result.RowsAffected()
+    if rows == 0 {
+        return ErrUnauthorized
+    }
+    return nil
+}
+
+// GetTotalNotificationsCount for pagination
+func (r *Repo) GetTotalNotificationsCount(ctx context.Context, userID string, unreadOnly bool) (int, error) {
+    query := `SELECT COUNT(*) FROM notifications WHERE recipient_id = ?`
+    
+    if unreadOnly {
+        query += " AND is_read = 0"
+    }
+
+    var count int
+    err := r.DB.QueryRowContext(ctx, query, userID).Scan(&count)
+    return count, err
+}
+
+// GetNotificationByID retrieves single notification
+func (r *Repo) GetNotificationByID(ctx context.Context, notificationID int) (*notification.Notification, error) {
+    query := `
+        SELECT 
+            n.id, n.recipient_id, n.actor_id, n.notification_type,
+            n.topic_id, n.comment_id, n.message, n.is_read,
+            n.read_at, n.created_at,
+            COALESCE(u.username, '') as actor_username
+        FROM notifications n
+        LEFT JOIN users u ON n.actor_id = u.id
+        WHERE n.id = ?
+    `
+
+    var notif notification.Notification
+    var actorID sql.NullString
+    var actorUsername sql.NullString
+    var topicID, commentID sql.NullInt64
+    var readAt sql.NullTime
+
+    err := r.DB.QueryRowContext(ctx, query, notificationID).Scan(
+        &notif.ID, &notif.RecipientID, &actorID, &notif.NotificationType,
+        &topicID, &commentID, &notif.Message, &notif.IsRead,
+        &readAt, &notif.CreatedAt, &actorUsername,
+    )
+
+    if errors.Is(err, sql.ErrNoRows) {
+        return nil, ErrNotificationNotFound
+    }
+    if err != nil {
+        return nil, err
+    }
+
+    // Handle nullable fields
+    if actorID.Valid {
+        notif.ActorID = &actorID.String
+    }
+    if actorUsername.Valid {
+        notif.ActorUsername = actorUsername.String
+    }
+    if topicID.Valid {
+        id := int(topicID.Int64)
+        notif.TopicID = &id
+    }
+    if commentID.Valid {
+        id := int(commentID.Int64)
+        notif.CommentID = &id
+    }
+    if readAt.Valid {
+        notif.ReadAt = &readAt.Time
+    }
+
+    return &notif, nil
+}
+
+KEY POINTS:
+- Use sql.Null* types for nullable database fields
+- LEFT JOIN with users table to get actor username
+- Pagination support with LIMIT/OFFSET
+- Check rows affected for UPDATE/DELETE authorization
+
+
+STEP 2.3: Register Repository
+-----------------------------
+
+FILE: internal/infra/storage/sqlite/repositories.go
+
+Add imports:
+import (
+    "github.com/arnald/forum/internal/domain/notification"
+    "github.com/arnald/forum/internal/infra/storage/sqlite/notifications"
+)
+
+Add to struct:
+type Repositories struct {
+    UserRepo         user.Repository
+    CategoryRepo     category.Repository
+    TopicRepo        topic.Repository
+    CommentRepo      comment.Repository
+    NotificationRepo notification.Repository  // ADD
+}
+
+Add to factory:
+func NewRepositories(db *sql.DB) *Repositories {
+    return &Repositories{
+        UserRepo:         users.NewRepo(db),
+        CategoryRepo:     categories.NewRepo(db),
+        TopicRepo:        topics.NewRepo(db),
+        CommentRepo:      comments.NewRepo(db),
+        NotificationRepo: notifications.NewRepo(db),  // ADD
+    }
+}
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                       PHASE 3: APPLICATION LAYER                           ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 3.1: Create Notification Service
+-------------------------------------
+
+FILE: internal/app/notifications/service/notificationService.go
+
+package notificationservice
+
+import (
+    "context"
+    "fmt"
+    "github.com/arnald/forum/internal/domain/notification"
+)
+
+type Service interface {
+    NotifyCommentOnTopic(ctx context.Context, topicOwnerID, actorID, actorUsername string, topicID int, topicTitle string) error
+    NotifyLikeOnTopic(ctx context.Context, topicOwnerID, actorID, actorUsername string, topicID int, topicTitle string) error
+    NotifyDislikeOnTopic(ctx context.Context, topicOwnerID, actorID, actorUsername string, topicID int, topicTitle string) error
+    NotifyLikeOnComment(ctx context.Context, commentOwnerID, actorID, actorUsername string, commentID int) error
+    NotifyDislikeOnComment(ctx context.Context, commentOwnerID, actorID, actorUsername string, commentID int) error
+}
+
+type service struct {
+    repo notification.Repository
+}
+
+func NewService(repo notification.Repository) Service {
+    return &service{repo: repo}
+}
+
+func (s *service) NotifyCommentOnTopic(ctx context.Context, topicOwnerID, actorID, actorUsername string, topicID int, topicTitle string) error {
+    // Don't notify if user comments on own topic
+    if topicOwnerID == actorID {
+        return nil
+    }
+
+    message := fmt.Sprintf("%s commented on your post \"%s\"", actorUsername, topicTitle)
+
+    notif := &notification.Notification{
+        RecipientID:      topicOwnerID,
+        ActorID:          &actorID,
+        ActorUsername:    actorUsername,
+        NotificationType: notification.CommentOnTopic,
+        TopicID:          &topicID,
+        Message:          message,
+    }
+
+    return s.repo.CreateNotification(ctx, notif)
+}
+
+func (s *service) NotifyLikeOnTopic(ctx context.Context, topicOwnerID, actorID, actorUsername string, topicID int, topicTitle string) error {
+    if topicOwnerID == actorID {
+        return nil
+    }
+
+    message := fmt.Sprintf("%s liked your post \"%s\"", actorUsername, topicTitle)
+
+    notif := &notification.Notification{
+        RecipientID:      topicOwnerID,
+        ActorID:          &actorID,
+        ActorUsername:    actorUsername,
+        NotificationType: notification.LikeOnTopic,
+        TopicID:          &topicID,
+        Message:          message,
+    }
+
+    return s.repo.CreateNotification(ctx, notif)
+}
+
+func (s *service) NotifyDislikeOnTopic(ctx context.Context, topicOwnerID, actorID, actorUsername string, topicID int, topicTitle string) error {
+    if topicOwnerID == actorID {
+        return nil
+    }
+
+    message := fmt.Sprintf("%s disliked your post \"%s\"", actorUsername, topicTitle)
+
+    notif := &notification.Notification{
+        RecipientID:      topicOwnerID,
+        ActorID:          &actorID,
+        ActorUsername:    actorUsername,
+        NotificationType: notification.DislikeOnTopic,
+        TopicID:          &topicID,
+        Message:          message,
+    }
+
+    return s.repo.CreateNotification(ctx, notif)
+}
+
+func (s *service) NotifyLikeOnComment(ctx context.Context, commentOwnerID, actorID, actorUsername string, commentID int) error {
+    if commentOwnerID == actorID {
+        return nil
+    }
+
+    message := fmt.Sprintf("%s liked your comment", actorUsername)
+
+    notif := &notification.Notification{
+        RecipientID:      commentOwnerID,
+        ActorID:          &actorID,
+        ActorUsername:    actorUsername,
+        NotificationType: notification.LikeOnComment,
+        CommentID:        &commentID,
+        Message:          message,
+    }
+
+    return s.repo.CreateNotification(ctx, notif)
+}
+
+func (s *service) NotifyDislikeOnComment(ctx context.Context, commentOwnerID, actorID, actorUsername string, commentID int) error {
+    if commentOwnerID == actorID {
+        return nil
+    }
+
+    message := fmt.Sprintf("%s disliked your comment", actorUsername)
+
+    notif := &notification.Notification{
+        RecipientID:      commentOwnerID,
+        ActorID:          &actorID,
+        ActorUsername:    actorUsername,
+        NotificationType: notification.DislikeOnComment,
+        CommentID:        &commentID,
+        Message:          message,
+    }
+
+    return s.repo.CreateNotification(ctx, notif)
+}
+
+WHY: Centralizes notification creation logic and prevents code duplication
+
+
+STEP 3.2: Create Query Handlers
+-------------------------------
+
+FILE: internal/app/notifications/queries/getUserNotifications.go
+
+package notificationqueries
+
+import (
+    "context"
+    "math"
+    "github.com/arnald/forum/internal/domain/notification"
+)
+
+type GetUserNotificationsRequest struct {
+    UserID     string
+    Page       int
+    PageSize   int
+    UnreadOnly bool
+}
+
+type GetUserNotificationsResponse struct {
+    Notifications []notification.Notification
+    TotalCount    int
+    UnreadCount   int
+    CurrentPage   int
+    PageSize      int
+    TotalPages    int
+    HasNextPage   bool
+    HasPrevPage   bool
+}
+
+type GetUserNotificationsHandler interface {
+    Handle(ctx context.Context, req GetUserNotificationsRequest) (*GetUserNotificationsResponse, error)
+}
+
+type getUserNotificationsHandler struct {
+    repo notification.Repository
+}
+
+func NewGetUserNotificationsHandler(repo notification.Repository) GetUserNotificationsHandler {
+    return &getUserNotificationsHandler{repo: repo}
+}
+
+func (h *getUserNotificationsHandler) Handle(ctx context.Context, req GetUserNotificationsRequest) (*GetUserNotificationsResponse, error) {
+    if req.PageSize <= 0 {
+        req.PageSize = 20
+    }
+    if req.Page <= 0 {
+        req.Page = 1
+    }
+
+    notifications, err := h.repo.GetUserNotifications(ctx, req.UserID, req.Page, req.PageSize, req.UnreadOnly)
+    if err != nil {
+        return nil, err
+    }
+
+    totalCount, err := h.repo.GetTotalNotificationsCount(ctx, req.UserID, req.UnreadOnly)
+    if err != nil {
+        return nil, err
+    }
+
+    unreadCount, err := h.repo.GetUnreadCount(ctx, req.UserID)
+    if err != nil {
+        return nil, err
+    }
+
+    totalPages := int(math.Ceil(float64(totalCount) / float64(req.PageSize)))
+
+    return &GetUserNotificationsResponse{
+        Notifications: notifications,
+        TotalCount:    totalCount,
+        UnreadCount:   unreadCount,
+        CurrentPage:   req.Page,
+        PageSize:      req.PageSize,
+        TotalPages:    totalPages,
+        HasNextPage:   req.Page < totalPages,
+        HasPrevPage:   req.Page > 1,
+    }, nil
+}
+
+
+FILE: internal/app/notifications/queries/getUnreadCount.go
+
+package notificationqueries
+
+import (
+    "context"
+    "github.com/arnald/forum/internal/domain/notification"
+)
+
+type GetUnreadCountRequest struct {
+    UserID string
+}
+
+type GetUnreadCountResponse struct {
+    Count int `json:"count"`
+}
+
+type GetUnreadCountHandler interface {
+    Handle(ctx context.Context, req GetUnreadCountRequest) (*GetUnreadCountResponse, error)
+}
+
+type getUnreadCountHandler struct {
+    repo notification.Repository
+}
+
+func NewGetUnreadCountHandler(repo notification.Repository) GetUnreadCountHandler {
+    return &getUnreadCountHandler{repo: repo}
+}
+
+func (h *getUnreadCountHandler) Handle(ctx context.Context, req GetUnreadCountRequest) (*GetUnreadCountResponse, error) {
+    count, err := h.repo.GetUnreadCount(ctx, req.UserID)
+    if err != nil {
+        return nil, err
+    }
+    return &GetUnreadCountResponse{Count: count}, nil
+}
+
+
+STEP 3.3: Create Command Handlers
+---------------------------------
+
+FILE: internal/app/notifications/commands/markAsRead.go
+
+package notificationcommands
+
+import (
+    "context"
+    "github.com/arnald/forum/internal/domain/notification"
+)
+
+type MarkAsReadRequest struct {
+    UserID         string
+    NotificationID int
+}
+
+type MarkAsReadHandler interface {
+    Handle(ctx context.Context, req MarkAsReadRequest) error
+}
+
+type markAsReadHandler struct {
+    repo notification.Repository
+}
+
+func NewMarkAsReadHandler(repo notification.Repository) MarkAsReadHandler {
+    return &markAsReadHandler{repo: repo}
+}
+
+func (h *markAsReadHandler) Handle(ctx context.Context, req MarkAsReadRequest) error {
+    return h.repo.MarkAsRead(ctx, req.NotificationID, req.UserID)
+}
+
+
+FILE: internal/app/notifications/commands/markAllAsRead.go
+
+package notificationcommands
+
+import (
+    "context"
+    "github.com/arnald/forum/internal/domain/notification"
+)
+
+type MarkAllAsReadRequest struct {
+    UserID string
+}
+
+type MarkAllAsReadHandler interface {
+    Handle(ctx context.Context, req MarkAllAsReadRequest) error
+}
+
+type markAllAsReadHandler struct {
+    repo notification.Repository
+}
+
+func NewMarkAllAsReadHandler(repo notification.Repository) MarkAllAsReadHandler {
+    return &markAllAsReadHandler{repo: repo}
+}
+
+func (h *markAllAsReadHandler) Handle(ctx context.Context, req MarkAllAsReadRequest) error {
+    return h.repo.MarkAllAsRead(ctx, req.UserID)
+}
+
+
+STEP 3.4: Register in Services
+------------------------------
+
+FILE: internal/app/services.go
+
+Add imports:
+notificationCommands "github.com/arnald/forum/internal/app/notifications/commands"
+notificationQueries "github.com/arnald/forum/internal/app/notifications/queries"
+notificationService "github.com/arnald/forum/internal/app/notifications/service"
+"github.com/arnald/forum/internal/domain/notification"
+
+Add to Queries struct:
+GetUserNotifications notificationQueries.GetUserNotificationsHandler
+GetUnreadCount       notificationQueries.GetUnreadCountHandler
+
+Add to Commands struct:
+MarkAsRead    notificationCommands.MarkAsReadHandler
+MarkAllAsRead notificationCommands.MarkAllAsReadHandler
+
+Add to UserServices:
+NotificationService notificationService.Service
+
+Update NewServices signature:
+func NewServices(
+    userRepo user.Repository,
+    categoryRepo category.Repository,
+    topicRepo topic.Repository,
+    commentRepo comment.Repository,
+    notificationRepo notification.Repository,  // ADD
+) Services {
+    notifService := notificationService.NewService(notificationRepo)
+    
+    return Services{
+        UserServices: UserServices{
+            Queries: Queries{
+                // ... existing ...
+                GetUserNotifications: notificationQueries.NewGetUserNotificationsHandler(notificationRepo),
+                GetUnreadCount:       notificationQueries.NewGetUnreadCountHandler(notificationRepo),
+            },
+            Commands: Commands{
+                // ... existing ...
+                MarkAsRead:    notificationCommands.NewMarkAsReadHandler(notificationRepo),
+                MarkAllAsRead: notificationCommands.NewMarkAllAsReadHandler(notificationRepo),
+            },
+            NotificationService: notifService,
+        },
+    }
+}
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                       PHASE 4: HTTP HANDLERS & ROUTES                      ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+[Continue with HTTP handlers, routes, integration, and testing sections...]
+
+Due to length constraints, the remaining sections include:
+- HTTP handler implementations
+- Route registration
+- Integration with existing features
+- Testing procedures
+- API documentation
+- Troubleshooting tips
+
+The pattern follows the same structure as comments implementation.
+
+================================================================================
+                        7. API DOCUMENTATION
+================================================================================
+
+ENDPOINTS:
+
+1. GET /api/v1/notifications?page=1&pageSize=20&unreadOnly=false
+   Auth: Required
+   Returns: Paginated notifications list
+
+2. GET /api/v1/notifications/unread-count
+   Auth: Required
+   Returns: Count of unread notifications
+
+3. POST /api/v1/notifications/mark-read
+   Auth: Required
+   Body: {"notificationId": 1}
+
+4. POST /api/v1/notifications/mark-all-read
+   Auth: Required
+   Body: {}
+
+================================================================================
+                        8. INTEGRATION EXAMPLE
+================================================================================
+
+When a user comments on a topic, modify the createComment handler:
+
+// After creating the comment successfully:
+topic, err := h.topicRepo.GetTopicByID(ctx, req.TopicID)
+if err == nil && topic != nil {
+    _ = h.notificationService.NotifyCommentOnTopic(
+        ctx,
+        topic.UserID,      // who to notify
+        req.User.ID,       // who did it
+        req.User.Username, // their username
+        req.TopicID,       // which topic
+        topic.Title,       // topic title
+    )
+}
+
+Similar integration for votes on topics and comments.
+
+================================================================================
+                    9. TESTING WITH POSTMAN (NO FRONTEND)
+================================================================================
+
+Since the frontend doesn't work yet, use Postman to test all notification features.
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                          POSTMAN SETUP                                     ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: Create Postman Collection
+----------------------------------
+
+1. Open Postman
+2. Create new Collection: "Forum Notifications Tests"
+3. Add environment variables for base URL
+
+ENVIRONMENT VARIABLES:
+- base_url: http://localhost:8080
+- api_version: /api/v1
+
+
+STEP 2: Configure Cookie Management
+-----------------------------------
+
+Important: Postman needs to handle cookies for authentication!
+
+Method 1 (Recommended): Use Tests tab to save cookies
+In each login request, add to "Tests" tab:
+
+```javascript
+// Save session cookie
+var sessionCookie = pm.cookies.get("session_token");
+if (sessionCookie) {
+    pm.environment.set("session_token", sessionCookie);
+}
+
+var refreshCookie = pm.cookies.get("refresh_token");
+if (refreshCookie) {
+    pm.environment.set("refresh_token", refreshCookie);
+}
+```
+
+Method 2: Manual Cookie Interceptor
+Enable Postman Interceptor extension in Chrome
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     COMPLETE TEST SEQUENCE                                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+TEST SCENARIO: Alice creates post, Bob comments, Alice gets notification
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 1: Register Alice
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/register
+Headers:
+  Content-Type: application/json
+Body (raw JSON):
+{
+    "username": "alice",
+    "email": "alice@test.com",
+    "password": "password123"
+}
+
+Expected Response (201 Created):
+{
+    "data": {
+        "userId": "some-uuid-here",
+        "message": "User registered successfully"
+    }
+}
+
+Tests tab (save session):
+```javascript
+pm.test("User registered", function () {
+    pm.response.to.have.status(201);
+});
+
+// Save Alice's session
+var sessionCookie = pm.cookies.get("session_token");
+if (sessionCookie) {
+    pm.environment.set("alice_session", sessionCookie);
+}
+```
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 2: Register Bob
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/register
+Headers:
+  Content-Type: application/json
+Body (raw JSON):
+{
+    "username": "bob",
+    "email": "bob@test.com",
+    "password": "password123"
+}
+
+Expected Response (201 Created):
+{
+    "data": {
+        "userId": "some-uuid-here",
+        "message": "User registered successfully"
+    }
+}
+
+Tests tab:
+```javascript
+pm.test("User registered", function () {
+    pm.response.to.have.status(201);
+});
+
+// Save Bob's session
+var sessionCookie = pm.cookies.get("session_token");
+if (sessionCookie) {
+    pm.environment.set("bob_session", sessionCookie);
+}
+```
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 3: Alice Login
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/login/username
+Headers:
+  Content-Type: application/json
+Body (raw JSON):
+{
+    "username": "alice",
+    "password": "password123"
+}
+
+Expected Response (200 OK):
+{
+    "data": {
+        "user": {
+            "id": "uuid",
+            "username": "alice",
+            "email": "alice@test.com"
+        },
+        "message": "Login successful"
+    }
+}
+
+Tests tab:
+```javascript
+pm.test("Login successful", function () {
+    pm.response.to.have.status(200);
+});
+
+// Save Alice's session for later use
+var sessionCookie = pm.cookies.get("session_token");
+if (sessionCookie) {
+    pm.environment.set("alice_session", sessionCookie);
+}
+
+console.log("Alice session:", sessionCookie);
+```
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 4: Alice Creates a Topic
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/topics/create
+Headers:
+  Content-Type: application/json
+  Cookie: session_token={{alice_session}}
+Body (raw JSON):
+{
+    "title": "My First Running Post",
+    "content": "Looking for advice on marathon training!",
+    "categoryId": 1,
+    "imagePath": ""
+}
+
+Expected Response (201 Created):
+{
+    "data": {
+        "topicId": 1,
+        "message": "Topic created successfully"
+    }
+}
+
+Tests tab:
+```javascript
+pm.test("Topic created", function () {
+    pm.response.to.have.status(201);
+});
+
+// Save topic ID for later
+var jsonData = pm.response.json();
+if (jsonData.data && jsonData.data.topicId) {
+    pm.environment.set("topic_id", jsonData.data.topicId);
+}
+```
+
+IMPORTANT: Make sure session cookie is sent!
+Check Postman cookies tab to verify session_token is being sent.
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 5: Bob Login
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/login/username
+Headers:
+  Content-Type: application/json
+Body (raw JSON):
+{
+    "username": "bob",
+    "password": "password123"
+}
+
+Tests tab:
+```javascript
+pm.test("Bob login successful", function () {
+    pm.response.to.have.status(200);
+});
+
+var sessionCookie = pm.cookies.get("session_token");
+if (sessionCookie) {
+    pm.environment.set("bob_session", sessionCookie);
+}
+
+console.log("Bob session:", sessionCookie);
+```
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 6: Bob Comments on Alice's Post (Triggers Notification!)
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/comments/create
+Headers:
+  Content-Type: application/json
+  Cookie: session_token={{bob_session}}
+Body (raw JSON):
+{
+    "topicId": {{topic_id}},
+    "content": "Great question! I recommend starting with shorter distances first."
+}
+
+Expected Response (201 Created):
+{
+    "data": {
+        "commentId": 1,
+        "message": "Comment created successfully"
+    }
+}
+
+Tests tab:
+```javascript
+pm.test("Comment created", function () {
+    pm.response.to.have.status(201);
+});
+
+console.log("Comment created - Notification should be triggered for Alice!");
+```
+
+IMPORTANT: This should automatically trigger a notification for Alice!
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 7: Alice Checks Notifications (Should See 1 Notification!)
+────────────────────────────────────────────────────────────────────────────
+
+Method: GET
+URL: {{base_url}}{{api_version}}/notifications?page=1&pageSize=20&unreadOnly=false
+Headers:
+  Cookie: session_token={{alice_session}}
+
+Expected Response (200 OK):
+{
+    "info": {
+        "totalRecords": 1,
+        "currentPage": 1,
+        "pageSize": 20,
+        "totalPages": 1
+    },
+    "data": {
+        "notifications": [
+            {
+                "id": 1,
+                "recipientId": "alice-uuid",
+                "actorId": "bob-uuid",
+                "actorUsername": "bob",
+                "notificationType": "COMMENT_ON_TOPIC",
+                "topicId": 1,
+                "message": "bob commented on your post \"My First Running Post\"",
+                "isRead": false,
+                "readAt": null,
+                "createdAt": "2025-10-22T19:30:00Z"
+            }
+        ],
+        "unreadCount": 1
+    }
+}
+
+Tests tab:
+```javascript
+pm.test("Notifications retrieved", function () {
+    pm.response.to.have.status(200);
+});
+
+pm.test("Should have 1 notification", function () {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.data.notifications.length).to.equal(1);
+});
+
+pm.test("Notification should be unread", function () {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.data.notifications[0].isRead).to.equal(false);
+});
+
+pm.test("Unread count should be 1", function () {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.data.unreadCount).to.equal(1);
+});
+
+// Save notification ID for next step
+var jsonData = pm.response.json();
+if (jsonData.data.notifications && jsonData.data.notifications.length > 0) {
+    pm.environment.set("notification_id", jsonData.data.notifications[0].id);
+}
+```
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 8: Alice Checks Unread Count
+────────────────────────────────────────────────────────────────────────────
+
+Method: GET
+URL: {{base_url}}{{api_version}}/notifications/unread-count
+Headers:
+  Cookie: session_token={{alice_session}}
+
+Expected Response (200 OK):
+{
+    "data": {
+        "count": 1
+    }
+}
+
+Tests tab:
+```javascript
+pm.test("Unread count retrieved", function () {
+    pm.response.to.have.status(200);
+});
+
+pm.test("Should have 1 unread notification", function () {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.data.count).to.equal(1);
+});
+```
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 9: Alice Marks Notification as Read
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/notifications/mark-read
+Headers:
+  Content-Type: application/json
+  Cookie: session_token={{alice_session}}
+Body (raw JSON):
+{
+    "notificationId": {{notification_id}}
+}
+
+Expected Response (200 OK):
+{
+    "message": "Marked as read"
+}
+
+Tests tab:
+```javascript
+pm.test("Notification marked as read", function () {
+    pm.response.to.have.status(200);
+});
+```
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 10: Verify Unread Count is Now 0
+────────────────────────────────────────────────────────────────────────────
+
+Method: GET
+URL: {{base_url}}{{api_version}}/notifications/unread-count
+Headers:
+  Cookie: session_token={{alice_session}}
+
+Expected Response (200 OK):
+{
+    "data": {
+        "count": 0
+    }
+}
+
+Tests tab:
+```javascript
+pm.test("Unread count is now 0", function () {
+    pm.response.to.have.status(200);
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.data.count).to.equal(0);
+});
+```
+
+
+────────────────────────────────────────────────────────────────────────────
+REQUEST 11: Verify Notification is Marked as Read
+────────────────────────────────────────────────────────────────────────────
+
+Method: GET
+URL: {{base_url}}{{api_version}}/notifications?page=1&pageSize=20&unreadOnly=false
+Headers:
+  Cookie: session_token={{alice_session}}
+
+Expected Response:
+The same notification should now have isRead: true and a readAt timestamp
+
+Tests tab:
+```javascript
+pm.test("Notification is marked as read", function () {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.data.notifications[0].isRead).to.equal(true);
+    pm.expect(jsonData.data.notifications[0].readAt).to.not.be.null;
+});
+```
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     TESTING VOTING NOTIFICATIONS                           ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+────────────────────────────────────────────────────────────────────────────
+TEST: Bob Likes Alice's Topic
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/votes/topic
+Headers:
+  Content-Type: application/json
+  Cookie: session_token={{bob_session}}
+Body (raw JSON):
+{
+    "topicId": {{topic_id}},
+    "voteType": 1
+}
+
+Expected: Alice gets a "bob liked your post" notification
+
+Then check Alice's notifications again:
+Method: GET
+URL: {{base_url}}{{api_version}}/notifications?page=1&pageSize=20&unreadOnly=true
+Headers:
+  Cookie: session_token={{alice_session}}
+
+Should see 1 new unread notification about the like!
+
+
+────────────────────────────────────────────────────────────────────────────
+TEST: Bob Dislikes Alice's Topic
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/votes/topic
+Headers:
+  Content-Type: application/json
+  Cookie: session_token={{bob_session}}
+Body (raw JSON):
+{
+    "topicId": {{topic_id}},
+    "voteType": -1
+}
+
+Expected: Alice gets a "bob disliked your post" notification
+
+
+────────────────────────────────────────────────────────────────────────────
+TEST: Mark All as Read
+────────────────────────────────────────────────────────────────────────────
+
+Method: POST
+URL: {{base_url}}{{api_version}}/notifications/mark-all-read
+Headers:
+  Content-Type: application/json
+  Cookie: session_token={{alice_session}}
+Body (raw JSON):
+{}
+
+Expected Response (200 OK):
+{
+    "message": "All notifications marked as read"
+}
+
+Then verify unread count is 0.
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     TESTING EDGE CASES                                     ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+────────────────────────────────────────────────────────────────────────────
+EDGE CASE 1: User Comments on Own Post (No Notification)
+────────────────────────────────────────────────────────────────────────────
+
+Alice comments on her own post:
+Method: POST
+URL: {{base_url}}{{api_version}}/comments/create
+Headers:
+  Content-Type: application/json
+  Cookie: session_token={{alice_session}}
+Body:
+{
+    "topicId": {{topic_id}},
+    "content": "Thanks for the advice everyone!"
+}
+
+Then check Alice's notifications - should NOT see a self-notification!
+
+
+────────────────────────────────────────────────────────────────────────────
+EDGE CASE 2: Pagination Test
+────────────────────────────────────────────────────────────────────────────
+
+Create multiple notifications, then test pagination:
+
+Method: GET
+URL: {{base_url}}{{api_version}}/notifications?page=1&pageSize=2&unreadOnly=false
+Headers:
+  Cookie: session_token={{alice_session}}
+
+Should return only 2 notifications per page with proper pagination info.
+
+
+────────────────────────────────────────────────────────────────────────────
+EDGE CASE 3: Filter Unread Only
+────────────────────────────────────────────────────────────────────────────
+
+Method: GET
+URL: {{base_url}}{{api_version}}/notifications?page=1&pageSize=20&unreadOnly=true
+Headers:
+  Cookie: session_token={{alice_session}}
+
+Should only return unread notifications.
+
+
+────────────────────────────────────────────────────────────────────────────
+EDGE CASE 4: Unauthorized Access
+────────────────────────────────────────────────────────────────────────────
+
+Try to mark someone else's notification as read:
+
+Method: POST
+URL: {{base_url}}{{api_version}}/notifications/mark-read
+Headers:
+  Content-Type: application/json
+  Cookie: session_token={{bob_session}}
+Body:
+{
+    "notificationId": 1
+}
+
+Expected: 403 Forbidden or error (if notification belongs to Alice)
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     POSTMAN COLLECTION RUNNER                              ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+AUTOMATED TEST SUITE:
+--------------------
+
+1. Organize requests in proper order (1-11)
+2. Click "Run Collection" in Postman
+3. Select all requests
+4. Click "Run Forum Notifications Tests"
+5. Watch all tests execute automatically!
+
+The collection runner will:
+✓ Register both users
+✓ Log them in
+✓ Create topic
+✓ Create comment (triggers notification)
+✓ Check notifications
+✓ Mark as read
+✓ Verify counts
+
+Result: All tests should PASS!
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     TROUBLESHOOTING POSTMAN                                ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+ISSUE: Cookies Not Being Sent
+SOLUTION:
+1. Check Postman cookies manager (🍪 icon near Send button)
+2. Verify cookies are saved for localhost:8080
+3. Use Cookie header manually: Cookie: session_token=your-token-here
+4. Enable "Automatically follow redirects" in Postman settings
+
+ISSUE: 401 Unauthorized on Protected Routes
+SOLUTION:
+1. Verify you're using the correct session token
+2. Check token is not expired (default 1600 seconds)
+3. Log in again to get fresh token
+4. Use {{alice_session}} or {{bob_session}} variables
+
+ISSUE: Notification Not Created
+SOLUTION:
+1. Check server logs for errors
+2. Verify comment was actually created (check DB)
+3. Ensure notification service is wired in use cases
+4. Check topic owner ID matches Alice's ID
+
+ISSUE: Can't See Environment Variables
+SOLUTION:
+1. Click the eye icon (👁️) in top right
+2. Select or create an environment
+3. Set base_url and other variables
+4. Make sure environment is selected (dropdown near eye icon)
+
+ISSUE: Session Token in Wrong Format
+SOLUTION:
+Cookies should be automatically handled by Postman.
+If manual, format: Cookie: session_token=uuid-value-here
+
+ISSUE: Database Empty After Restart
+SOLUTION:
+Server deletes and recreates DB on migration.
+Re-run the full test sequence to repopulate data.
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     POSTMAN TIPS & TRICKS                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+TIP 1: Pre-request Scripts
+--------------------------
+Use to set up data before each request:
+
+```javascript
+// Switch to Alice's session
+pm.request.headers.add({
+    key: 'Cookie',
+    value: 'session_token=' + pm.environment.get('alice_session')
+});
+```
+
+TIP 2: Console Logging
+---------------------
+Use console.log() in Tests tab to debug:
+
+```javascript
+var jsonData = pm.response.json();
+console.log("Full response:", jsonData);
+console.log("Notification ID:", jsonData.data.notifications[0].id);
+```
+
+View console: View → Show Postman Console (Ctrl+Alt+C)
+
+TIP 3: Save Collection
+---------------------
+Export your collection to share with team:
+1. Click ⋯ on collection
+2. Export
+3. Save as JSON file
+4. Share or commit to Git
+
+TIP 4: Variables Everywhere
+--------------------------
+Use variables for everything that might change:
+- {{base_url}} - easy to switch between localhost and production
+- {{alice_session}} - switch users easily
+- {{topic_id}} - reference created resources
+
+TIP 5: Test Assertions Library
+------------------------------
+Postman uses Chai.js for assertions:
+
+```javascript
+pm.test("Status code is 200", function () {
+    pm.response.to.have.status(200);
+});
+
+pm.test("Response time is less than 200ms", function () {
+    pm.expect(pm.response.responseTime).to.be.below(200);
+});
+
+pm.test("Has notification", function () {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.data.notifications).to.be.an('array');
+    pm.expect(jsonData.data.notifications).to.have.lengthOf.at.least(1);
+});
+```
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     COMPLETE WORKFLOW EXAMPLE                              ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+FULL END-TO-END TEST IN POSTMAN:
+--------------------------------
+
+1. Start server: go run cmd/server/main.go
+
+2. In Postman, create folder: "Notification Complete Flow"
+
+3. Add requests in order:
+   - 1_Register_Alice
+   - 2_Register_Bob
+   - 3_Alice_Login
+   - 4_Alice_Create_Topic
+   - 5_Bob_Login
+   - 6_Bob_Comments (Creates notification!)
+   - 7_Alice_Check_Notifications (Should see 1)
+   - 8_Alice_Check_Unread_Count (Should be 1)
+   - 9_Alice_Mark_As_Read
+   - 10_Alice_Check_Unread_Count (Should be 0)
+   - 11_Bob_Likes_Topic (Creates notification!)
+   - 12_Alice_Check_Notifications (Should see 2 total, 1 unread)
+   - 13_Alice_Mark_All_Read
+   - 14_Alice_Check_Unread_Count (Should be 0)
+
+4. Click "Run" to execute entire flow!
+
+5. All tests should PASS ✓
+
+Expected Output in Collection Runner:
+- 14 requests executed
+- All tests passed
+- Total time: ~2-3 seconds
+- All assertions green ✓
+
+SUCCESS! Your notification system is working! 🎉
+
+
+================================================================================
+                        QUICK REFERENCE
+================================================================================
+
+FILES TO CREATE (~15):
+- domain/notification/notification.go
+- domain/notification/repository.go
+- infra/storage/sqlite/notifications/errors.go
+- infra/storage/sqlite/notifications/notificationRepo.go
+- app/notifications/service/notificationService.go
+- app/notifications/queries/getUserNotifications.go
+- app/notifications/queries/getUnreadCount.go
+- app/notifications/commands/markAsRead.go
+- app/notifications/commands/markAllAsRead.go
+- infra/http/notification/getUserNotifications/handler.go
+- infra/http/notification/getUnreadCount/handler.go
+- infra/http/notification/markAsRead/handler.go
+- infra/http/notification/markAllAsRead/handler.go
+
+FILES TO MODIFY (~6):
+- db/migrations/schema.sql
+- infra/storage/sqlite/repositories.go
+- app/services.go
+- app/comments/commands/createComment.go
+- infra/http/server.go
+- cmd/server/main.go
+
+TESTING SEQUENCE:
+1. Compile: go build ./...
+2. Start server with fresh DB
+3. Register two users (Alice, Bob)
+4. Alice creates topic
+5. Bob comments on Alice's topic
+6. Alice checks notifications (should see 1)
+7. Alice marks as read
+8. Check unread count (should be 0)
+
+================================================================================
+                          CONGRATULATIONS!
+================================================================================
+
+You now have a complete notification system implementation guide!
+
+This is an ADVANCED feature that demonstrates:
+✓ Event-driven architecture
+✓ Service layer pattern
+✓ Complex database relations
+✓ Nullable field handling
+✓ Integration with existing features
+
+Next steps:
+- Implement the notification system
+- Build notification UI (bell icon, dropdown)
+- Add WebSocket for real-time updates (optional)
+- Add email notifications (optional)
+
+Good luck! 🚀
+
+================================================================================
+                            END OF GUIDE
+================================================================================
+
+Version: 1.0
+Created: 2025-10-22
+Project: Running Forum
+Feature: Notifications System
+Difficulty: Hard (Advanced)

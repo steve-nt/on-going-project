@@ -1,0 +1,955 @@
+================================================================================
+                    COMMENTS SYSTEM IMPLEMENTATION GUIDE
+                         Complete Step-by-Step Tutorial
+================================================================================
+
+PROJECT: Running Forum
+FEATURE: Comments System (Create, Read, Update, Delete)
+DIFFICULTY: Medium
+ESTIMATED TIME: 3-4 days
+ARCHITECTURE: Clean Architecture (Domain → Application → Infrastructure)
+
+================================================================================
+                              TABLE OF CONTENTS
+================================================================================
+
+1. Overview & Architecture
+2. Prerequisites
+3. Implementation Phases
+4. Detailed Step-by-Step Guide
+5. API Documentation
+6. Testing Guide
+7. Troubleshooting
+8. Quick Reference
+
+================================================================================
+                        1. OVERVIEW & ARCHITECTURE
+================================================================================
+
+WHAT YOU'RE BUILDING:
+--------------------
+✓ Create comments on topics
+✓ Read comments with pagination
+✓ Update own comments
+✓ Delete own comments
+
+ARCHITECTURE FLOW:
+-----------------
+HTTP Request → Handler → Use Case → Repository → Database → Response
+
+DATABASE STATUS:
+---------------
+✓ Comments table EXISTS in schema.sql
+✓ Has: id, user_id, topic_id, content, created_at, updated_at
+✓ Foreign keys configured
+
+WHAT'S MISSING (What you'll build):
+-----------------------------------
+❌ Repository interface (domain/comment/repository.go)
+❌ SQLite implementation (infra/storage/sqlite/comments/)
+❌ Use cases (app/comments/commands & queries)
+❌ HTTP handlers (infra/http/comment/)
+❌ Routes & validation
+
+TOTAL FILES TO CREATE: ~13 new files
+TOTAL FILES TO MODIFY: ~5 existing files
+
+================================================================================
+                           2. PREREQUISITES
+================================================================================
+
+✓ Go 1.24.4 installed
+✓ Project compiles: go build ./...
+✓ Database exists: server starts without errors
+✓ Understand existing topic implementation pattern
+
+STUDY THESE FILES FIRST:
+------------------------
+1. internal/domain/topic/repository.go - See interface pattern
+2. internal/app/topics/commands/createTopic.go - See use case pattern
+3. internal/infra/http/topic/createTopic/ - See handler pattern
+
+================================================================================
+                        3. IMPLEMENTATION PHASES
+================================================================================
+
+PHASE 1: DOMAIN LAYER [30 minutes]
+-----------------------------------
+□ Create repository interface
+  File: internal/domain/comment/repository.go
+
+PHASE 2: INFRASTRUCTURE - DATABASE [2-3 hours]
+-----------------------------------------------
+□ Create error definitions
+  File: internal/infra/storage/sqlite/comments/errors.go
+  
+□ Implement repository
+  File: internal/infra/storage/sqlite/comments/commentRepo.go
+  
+□ Register in factory
+  File: internal/infra/storage/sqlite/repositories.go (modify)
+
+PHASE 3: APPLICATION LAYER [3-4 hours]
+---------------------------------------
+□ Create command use cases
+  Files: internal/app/comments/commands/
+    - createComment.go
+    - updateComment.go
+    - deleteComment.go
+    
+□ Create query use cases  
+  Files: internal/app/comments/queries/
+    - getComment.go
+    - getTopicComments.go
+    - errors.go
+    
+□ Register services
+  File: internal/app/services.go (modify)
+
+PHASE 4: HTTP LAYER [3-4 hours]
+--------------------------------
+□ Create HTTP handlers
+  Files: internal/infra/http/comment/
+    - createComment/createCommentHandler.go
+    - updateComment/updateCommentHandler.go
+    - deleteComment/deleteCommentHandler.go
+    - getTopicComments/getTopicCommentsHandler.go
+    
+□ Add validation
+  File: internal/pkg/validator/validationCases.go (modify)
+  
+□ Register routes
+  File: internal/infra/http/server.go (modify)
+  
+□ Update main
+  File: cmd/server/main.go (modify)
+
+PHASE 5: TESTING [2-3 hours]
+-----------------------------
+□ Manual API testing with curl
+□ Write unit tests
+□ Verify database integrity
+
+================================================================================
+                    4. DETAILED STEP-BY-STEP GUIDE
+================================================================================
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                       PHASE 1: DOMAIN LAYER                                ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1.1: Create Repository Interface
+--------------------------------------
+
+CREATE: internal/domain/comment/repository.go
+
+```go
+package comment
+
+import "context"
+
+type Repository interface {
+    CreateComment(ctx context.Context, comment *Comment) error
+    GetCommentByID(ctx context.Context, commentID int) (*Comment, error)
+    GetCommentsByTopicID(ctx context.Context, topicID, page, limit int) ([]Comment, error)
+    GetCommentsByUserID(ctx context.Context, userID string, page, limit int) ([]Comment, error)
+    UpdateComment(ctx context.Context, comment *Comment) error
+    DeleteComment(ctx context.Context, commentID int, userID string) error
+    GetTotalCommentsForTopic(ctx context.Context, topicID int) (int, error)
+}
+```
+
+WHY: This defines WHAT operations are possible (not HOW)
+NOTE: The Comment struct already exists in domain/comment/comment.go
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                  PHASE 2: INFRASTRUCTURE - DATABASE                        ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 2.1: Create Custom Errors
+-------------------------------
+
+CREATE: internal/infra/storage/sqlite/comments/errors.go
+
+```go
+package comments
+
+import "errors"
+
+var (
+    ErrCommentNotFound = errors.New("comment not found")
+    ErrTopicNotFound = errors.New("topic not found")
+    ErrUserNotFound = errors.New("user not found")
+    ErrUnauthorized = errors.New("unauthorized to modify this comment")
+    ErrInvalidContent = errors.New("comment content cannot be empty")
+)
+```
+
+
+STEP 2.2: Implement Repository
+-------------------------------
+
+CREATE: internal/infra/storage/sqlite/comments/commentRepo.go
+
+This is the largest file. Key methods:
+
+```go
+package comments
+
+import (
+    "context"
+    "database/sql"
+    "errors"
+    "fmt"
+    "strings"
+    "github.com/arnald/forum/internal/domain/comment"
+)
+
+type Repo struct {
+    DB *sql.DB
+}
+
+func NewRepo(db *sql.DB) *Repo {
+    return &Repo{DB: db}
+}
+
+// CreateComment - INSERT INTO comments
+func (r *Repo) CreateComment(ctx context.Context, comment *comment.Comment) error {
+    if strings.TrimSpace(comment.Content) == "" {
+        return ErrInvalidContent
+    }
+
+    query := `
+        INSERT INTO comments (user_id, topic_id, content, created_at, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `
+    
+    stmt, err := r.DB.PrepareContext(ctx, query)
+    if err != nil {
+        return fmt.Errorf("prepare failed: %w", err)
+    }
+    defer stmt.Close()
+
+    result, err := stmt.ExecContext(ctx, comment.UserID, comment.TopicID, comment.Content)
+    if err != nil {
+        if strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
+            return ErrTopicNotFound
+        }
+        return fmt.Errorf("failed to create comment: %w", err)
+    }
+
+    id, _ := result.LastInsertId()
+    comment.ID = int(id)
+    return nil
+}
+
+// GetCommentByID - SELECT with JOIN to get username
+func (r *Repo) GetCommentByID(ctx context.Context, commentID int) (*comment.Comment, error) {
+    query := `
+        SELECT c.id, c.user_id, c.topic_id, c.content, c.created_at, c.updated_at, u.username
+        FROM comments c
+        INNER JOIN users u ON c.user_id = u.id
+        WHERE c.id = ?
+    `
+    
+    var comm comment.Comment
+    err := r.DB.QueryRowContext(ctx, query, commentID).Scan(
+        &comm.ID, &comm.UserID, &comm.TopicID, &comm.Content,
+        &comm.CreatedAt, &comm.UpdatedAt, &comm.Username,
+    )
+
+    if errors.Is(err, sql.ErrNoRows) {
+        return nil, ErrCommentNotFound
+    }
+    return &comm, err
+}
+
+// GetCommentsByTopicID - SELECT with pagination
+func (r *Repo) GetCommentsByTopicID(ctx context.Context, topicID, page, limit int) ([]comment.Comment, error) {
+    offset := (page - 1) * limit
+
+    query := `
+        SELECT c.id, c.user_id, c.topic_id, c.content, c.created_at, c.updated_at, u.username
+        FROM comments c
+        INNER JOIN users u ON c.user_id = u.id
+        WHERE c.topic_id = ?
+        ORDER BY c.created_at ASC
+        LIMIT ? OFFSET ?
+    `
+    
+    rows, err := r.DB.QueryContext(ctx, query, topicID, limit, offset)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    comments := make([]comment.Comment, 0)
+    for rows.Next() {
+        var comm comment.Comment
+        err := rows.Scan(&comm.ID, &comm.UserID, &comm.TopicID, &comm.Content,
+            &comm.CreatedAt, &comm.UpdatedAt, &comm.Username)
+        if err != nil {
+            return nil, err
+        }
+        comments = append(comments, comm)
+    }
+    
+    return comments, rows.Err()
+}
+
+// GetCommentsByUserID - For user activity page
+func (r *Repo) GetCommentsByUserID(ctx context.Context, userID string, page, limit int) ([]comment.Comment, error) {
+    // Similar to GetCommentsByTopicID but WHERE c.user_id = ?
+    // ORDER BY c.created_at DESC (newest first for activity)
+    // Implementation left as exercise
+    return nil, nil
+}
+
+// UpdateComment - UPDATE only if user owns it
+func (r *Repo) UpdateComment(ctx context.Context, comment *comment.Comment) error {
+    if strings.TrimSpace(comment.Content) == "" {
+        return ErrInvalidContent
+    }
+
+    query := `
+        UPDATE comments
+        SET content = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND user_id = ?
+    `
+    
+    result, err := r.DB.ExecContext(ctx, query, comment.Content, comment.ID, comment.UserID)
+    if err != nil {
+        return err
+    }
+
+    rows, _ := result.RowsAffected()
+    if rows == 0 {
+        return ErrUnauthorized
+    }
+    return nil
+}
+
+// DeleteComment - DELETE only if user owns it
+func (r *Repo) DeleteComment(ctx context.Context, commentID int, userID string) error {
+    query := `DELETE FROM comments WHERE id = ? AND user_id = ?`
+    
+    result, err := r.DB.ExecContext(ctx, query, commentID, userID)
+    if err != nil {
+        return err
+    }
+
+    rows, _ := result.RowsAffected()
+    if rows == 0 {
+        return ErrUnauthorized
+    }
+    return nil
+}
+
+// GetTotalCommentsForTopic - For pagination
+func (r *Repo) GetTotalCommentsForTopic(ctx context.Context, topicID int) (int, error) {
+    query := `SELECT COUNT(*) FROM comments WHERE topic_id = ?`
+    
+    var count int
+    err := r.DB.QueryRowContext(ctx, query, topicID).Scan(&count)
+    return count, err
+}
+```
+
+KEY POINTS:
+- All queries use prepared statements (SQL injection protection)
+- JOIN with users table to get username
+- Validation before INSERT/UPDATE
+- Check rows affected for UPDATE/DELETE
+- Return custom errors for better debugging
+
+
+STEP 2.3: Register Repository
+------------------------------
+
+MODIFY: internal/infra/storage/sqlite/repositories.go
+
+Add to imports:
+```go
+"github.com/arnald/forum/internal/domain/comment"
+"github.com/arnald/forum/internal/infra/storage/sqlite/comments"
+```
+
+Add to struct:
+```go
+type Repositories struct {
+    UserRepo     user.Repository
+    CategoryRepo category.Repository
+    TopicRepo    topic.Repository
+    CommentRepo  comment.Repository  // ADD THIS
+}
+```
+
+Add to NewRepositories:
+```go
+func NewRepositories(db *sql.DB) *Repositories {
+    return &Repositories{
+        UserRepo:     users.NewRepo(db),
+        CategoryRepo: categories.NewRepo(db),
+        TopicRepo:    topics.NewRepo(db),
+        CommentRepo:  comments.NewRepo(db),  // ADD THIS
+    }
+}
+```
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     PHASE 3: APPLICATION LAYER                             ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 3.1: Create Commands (Write Operations)
+---------------------------------------------
+
+CREATE: internal/app/comments/commands/createComment.go
+
+```go
+package commentcommands
+
+import (
+    "context"
+    "github.com/arnald/forum/internal/domain/comment"
+    "github.com/arnald/forum/internal/domain/user"
+)
+
+type CreateCommentRequest struct {
+    User    *user.User
+    TopicID int    `json:"topicId"`
+    Content string `json:"content"`
+}
+
+type CreateCommentRequestHandler interface {
+    Handle(ctx context.Context, req CreateCommentRequest) (*comment.Comment, error)
+}
+
+type createCommentRequestHandler struct {
+    repo comment.Repository
+}
+
+func NewCreateCommentHandler(repo comment.Repository) CreateCommentRequestHandler {
+    return &createCommentRequestHandler{repo: repo}
+}
+
+func (h *createCommentRequestHandler) Handle(ctx context.Context, req CreateCommentRequest) (*comment.Comment, error) {
+    comm := &comment.Comment{
+        UserID:  req.User.ID,
+        TopicID: req.TopicID,
+        Content: req.Content,
+    }
+
+    err := h.repo.CreateComment(ctx, comm)
+    if err != nil {
+        return nil, err
+    }
+
+    comm.Username = req.User.Username
+    return comm, nil
+}
+```
+
+
+CREATE: internal/app/comments/commands/updateComment.go
+CREATE: internal/app/comments/commands/deleteComment.go
+
+Follow the same pattern as createComment.go
+Use UpdateCommentRequest and DeleteCommentRequest structs
+
+
+STEP 3.2: Create Queries (Read Operations)
+-------------------------------------------
+
+CREATE: internal/app/comments/queries/getComment.go
+CREATE: internal/app/comments/queries/getTopicComments.go
+
+getTopicComments.go should include pagination logic:
+
+```go
+type GetTopicCommentsResponse struct {
+    Comments     []comment.Comment
+    TotalCount   int
+    CurrentPage  int
+    PageSize     int
+    TotalPages   int
+    HasNextPage  bool
+    HasPrevPage  bool
+}
+```
+
+
+STEP 3.3: Register in Services
+-------------------------------
+
+MODIFY: internal/app/services.go
+
+Add imports:
+```go
+commentCommands "github.com/arnald/forum/internal/app/comments/commands"
+commentQueries "github.com/arnald/forum/internal/app/comments/queries"
+"github.com/arnald/forum/internal/domain/comment"
+```
+
+Add to Queries struct:
+```go
+GetComment       commentQueries.GetCommentRequestHandler
+GetTopicComments commentQueries.GetTopicCommentsRequestHandler
+```
+
+Add to Commands struct:
+```go
+CreateComment commentCommands.CreateCommentRequestHandler
+UpdateComment commentCommands.UpdateCommentRequestHandler
+DeleteComment commentCommands.DeleteCommentRequestHandler
+```
+
+Update NewServices signature:
+```go
+func NewServices(
+    userRepo user.Repository,
+    categoryRepo category.Repository,
+    topicRepo topic.Repository,
+    commentRepo comment.Repository,  // ADD
+) Services {
+```
+
+Initialize in return:
+```go
+Commands: Commands{
+    // ... existing ...
+    CreateComment: commentCommands.NewCreateCommentHandler(commentRepo),
+    UpdateComment: commentCommands.NewUpdateCommentHandler(commentRepo),
+    DeleteComment: commentCommands.NewDeleteCommentHandler(commentRepo),
+},
+```
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                          PHASE 4: HTTP LAYER                               ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 4.1: Create HTTP Handlers
+-------------------------------
+
+CREATE: internal/infra/http/comment/createComment/createCommentHandler.go
+
+```go
+package createcomment
+
+import (
+    "context"
+    "net/http"
+    "github.com/arnald/forum/internal/app"
+    commentCommands "github.com/arnald/forum/internal/app/comments/commands"
+    "github.com/arnald/forum/internal/config"
+    "github.com/arnald/forum/internal/infra/logger"
+    "github.com/arnald/forum/internal/infra/middleware"
+    "github.com/arnald/forum/internal/pkg/helpers"
+    "github.com/arnald/forum/internal/pkg/validator"
+)
+
+type RequestModel struct {
+    TopicID int    `json:"topicId"`
+    Content string `json:"content"`
+}
+
+type Handler struct {
+    UserServices app.Services
+    Config       *config.ServerConfig
+    Logger       logger.Logger
+}
+
+func NewHandler(userServices app.Services, config *config.ServerConfig, logger logger.Logger) *Handler {
+    return &Handler{UserServices: userServices, Config: config, Logger: logger}
+}
+
+func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        helpers.RespondWithError(w, http.StatusMethodNotAllowed, "Invalid method")
+        return
+    }
+
+    user := middleware.GetUserFromContext(r)
+    ctx, cancel := context.WithTimeout(r.Context(), h.Config.Timeouts.HandlerTimeouts.UserRegister)
+    defer cancel()
+
+    var req RequestModel
+    reqAny, err := helpers.ParseBodyRequest(r, &req)
+    if err != nil {
+        helpers.RespondWithError(w, http.StatusBadRequest, "Invalid payload")
+        return
+    }
+    defer r.Body.Close()
+
+    v := validator.New()
+    validator.ValidateCreateComment(v, reqAny)
+    if !v.Valid() {
+        helpers.RespondWithError(w, http.StatusBadRequest, v.ToStringErrors())
+        return
+    }
+
+    cmdReq := commentCommands.CreateCommentRequest{
+        User:    user,
+        TopicID: req.TopicID,
+        Content: req.Content,
+    }
+
+    comment, err := h.UserServices.UserServices.Commands.CreateComment.Handle(ctx, cmdReq)
+    if err != nil {
+        h.Logger.PrintError(err, nil)
+        helpers.RespondWithError(w, http.StatusInternalServerError, "Failed to create comment")
+        return
+    }
+
+    helpers.RespondWithJSON(w, http.StatusCreated, nil, map[string]interface{}{
+        "commentId": comment.ID,
+        "message":   "Comment created successfully",
+    })
+}
+```
+
+CREATE similarly:
+- updateComment/updateCommentHandler.go
+- deleteComment/deleteCommentHandler.go  
+- getTopicComments/getTopicCommentsHandler.go
+
+
+STEP 4.2: Add Validation Rules
+-------------------------------
+
+MODIFY: internal/pkg/validator/validationCases.go
+
+Add constants:
+```go
+const (
+    MinCommentContentLength = 1
+    MaxCommentContentLength = 1000
+)
+```
+
+Add functions:
+```go
+func ValidateCreateComment(v *Validator, data any) {
+    rules := []ValidationRule{
+        {
+            Field: "Content",
+            Rules: []func(any) (bool, string){
+                required,
+                minLength(MinCommentContentLength),
+                maxLength(MaxCommentContentLength),
+            },
+        },
+        {
+            Field: "TopicID",
+            Rules: []func(any) (bool, string){
+                required,
+                isPositiveInt,
+            },
+        },
+    }
+    ValidateStruct(v, data, rules)
+}
+
+func ValidateUpdateComment(v *Validator, data any) {
+    // Similar but with CommentID instead of TopicID
+}
+```
+
+
+STEP 4.3: Register Routes
+--------------------------
+
+MODIFY: internal/infra/http/server.go
+
+Add imports:
+```go
+createcomment "github.com/arnald/forum/internal/infra/http/comment/createComment"
+updatecomment "github.com/arnald/forum/internal/infra/http/comment/updateComment"
+deletecomment "github.com/arnald/forum/internal/infra/http/comment/deleteComment"
+gettopiccomments "github.com/arnald/forum/internal/infra/http/comment/getTopicComments"
+```
+
+Add in AddHTTPRoutes():
+```go
+// Comment routes
+server.router.HandleFunc(apiContext+"/comments/create",
+    middlewareChain(
+        createcomment.NewHandler(server.appServices, server.config, server.logger).CreateComment,
+        server.middleware.Authorization.Required,
+    ),
+)
+server.router.HandleFunc(apiContext+"/comments/update",
+    middlewareChain(
+        updatecomment.NewHandler(server.appServices, server.config, server.logger).UpdateComment,
+        server.middleware.Authorization.Required,
+    ),
+)
+server.router.HandleFunc(apiContext+"/comments/delete",
+    middlewareChain(
+        deletecomment.NewHandler(server.appServices, server.config, server.logger).DeleteComment,
+        server.middleware.Authorization.Required,
+    ),
+)
+server.router.HandleFunc(apiContext+"/comments/topic",
+    gettopiccomments.NewHandler(server.appServices, server.config, server.logger).GetTopicComments,
+)
+```
+
+
+STEP 4.4: Update Main Entry Point
+----------------------------------
+
+MODIFY: cmd/server/main.go
+
+Change:
+```go
+appServices := app.NewServices(
+    infraProviders.Repositories.UserRepo,
+    infraProviders.Repositories.CategoryRepo,
+    infraProviders.Repositories.TopicRepo,
+    infraProviders.Repositories.CommentRepo,  // ADD THIS
+)
+```
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                            PHASE 5: TESTING                                ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 5.1: Compile Check
+-----------------------
+
+cd /home/steven/Desktop/on-going-project/running-forum
+go build ./...
+
+If successful, all syntax is correct!
+
+
+STEP 5.2: Start Server
+----------------------
+
+go run cmd/server/main.go
+
+Watch for errors in console
+
+
+STEP 5.3: Test with curl
+-------------------------
+
+1. Register user:
+curl -X POST http://localhost:8080/api/v1/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@test.com","password":"password123"}'
+
+2. Login:
+curl -X POST http://localhost:8080/api/v1/login/username \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123"}' \
+  -c cookies.txt
+
+3. Create topic:
+curl -X POST http://localhost:8080/api/v1/topics/create \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"title":"Test Topic","content":"Test content","categoryId":1}'
+
+4. Create comment:
+curl -X POST http://localhost:8080/api/v1/comments/create \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"topicId":1,"content":"My first comment!"}'
+
+5. Get comments:
+curl "http://localhost:8080/api/v1/comments/topic?topicId=1&page=1&pageSize=20"
+
+6. Update comment:
+curl -X POST http://localhost:8080/api/v1/comments/update \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"commentId":1,"content":"Updated comment"}'
+
+7. Delete comment:
+curl -X POST http://localhost:8080/api/v1/comments/delete \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"commentId":1}'
+
+
+================================================================================
+                        5. API DOCUMENTATION
+================================================================================
+
+BASE URL: http://localhost:8080/api/v1
+
+1. CREATE COMMENT
+   POST /comments/create
+   Auth: Required
+   Body: {"topicId": 1, "content": "Comment text"}
+   Response: {"data": {"commentId": 1, "message": "Comment created successfully"}}
+
+2. GET TOPIC COMMENTS  
+   GET /comments/topic?topicId=1&page=1&pageSize=20
+   Auth: Not required
+   Response: {
+     "info": {"totalRecords": 10, "currentPage": 1, ...},
+     "data": [{"id": 1, "content": "...", "username": "..."}]
+   }
+
+3. UPDATE COMMENT
+   POST /comments/update
+   Auth: Required (must own comment)
+   Body: {"commentId": 1, "content": "New content"}
+   Response: {"message": "Comment updated successfully"}
+
+4. DELETE COMMENT
+   POST /comments/delete
+   Auth: Required (must own comment)
+   Body: {"commentId": 1}
+   Response: {"message": "Comment deleted successfully"}
+
+
+================================================================================
+                           6. TESTING GUIDE
+================================================================================
+
+MANUAL TEST CHECKLIST:
+----------------------
+□ Create comment on valid topic - should succeed
+□ Create comment on non-existent topic - should fail 404
+□ Create comment without auth - should fail 401
+□ Create comment with empty content - should fail 400
+□ Get comments for topic - should return array
+□ Get comments with pagination - should respect page/size
+□ Update own comment - should succeed
+□ Update someone else's comment - should fail 403
+□ Delete own comment - should succeed
+□ Delete someone else's comment - should fail 403
+
+DATABASE VERIFICATION:
+---------------------
+sqlite3 db/data/forum.db
+SELECT * FROM comments;
+SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id = u.id;
+.quit
+
+
+================================================================================
+                        7. TROUBLESHOOTING
+================================================================================
+
+ERROR: "table comments has no column..."
+SOLUTION: Run migrations again. Delete db/data/forum.db and restart server.
+
+ERROR: "FOREIGN KEY constraint failed"
+SOLUTION: Ensure topic exists before creating comment.
+
+ERROR: "unauthorized to modify this comment"
+SOLUTION: Verify user ID matches comment's user_id in database.
+
+ERROR: Import cycle
+SOLUTION: Check layer dependencies. Domain should not import from app/infra.
+
+ERROR: "method not found"
+SOLUTION: Ensure you registered handlers in services.go and main.go.
+
+
+================================================================================
+                         8. QUICK REFERENCE
+================================================================================
+
+FILES CREATED (13):
+-------------------
+domain/comment/repository.go
+infra/storage/sqlite/comments/errors.go
+infra/storage/sqlite/comments/commentRepo.go
+app/comments/commands/createComment.go
+app/comments/commands/updateComment.go
+app/comments/commands/deleteComment.go
+app/comments/queries/getComment.go
+app/comments/queries/getTopicComments.go
+app/comments/queries/errors.go
+infra/http/comment/createComment/createCommentHandler.go
+infra/http/comment/updateComment/updateCommentHandler.go
+infra/http/comment/deleteComment/deleteCommentHandler.go
+infra/http/comment/getTopicComments/getTopicCommentsHandler.go
+
+FILES MODIFIED (5):
+-------------------
+infra/storage/sqlite/repositories.go
+app/services.go
+infra/http/server.go
+pkg/validator/validationCases.go
+cmd/server/main.go
+
+API ENDPOINTS (4):
+------------------
+POST /api/v1/comments/create
+POST /api/v1/comments/update
+POST /api/v1/comments/delete
+GET  /api/v1/comments/topic
+
+TESTING:
+--------
+go build ./...              # Compile check
+go run cmd/server/main.go   # Start server
+curl ...                    # Test endpoints
+make test                   # Run tests
+
+
+================================================================================
+                            NEXT STEPS
+================================================================================
+
+After comments are working:
+
+1. BUILD FRONTEND
+   - Comment form component
+   - Display comments list
+   - Edit/delete UI
+
+2. ADD VOTING TO COMMENTS
+   - Like/dislike comments
+   - Show vote counts
+
+3. ADD NOTIFICATIONS
+   - Notify when someone comments on your post
+
+4. OPTIMIZE
+   - Add indexes to comments table
+   - Implement caching
+
+5. ENHANCE
+   - Add comment replies (nested comments)
+   - Add comment moderation
+
+
+================================================================================
+                          CONGRATULATIONS!
+================================================================================
+
+You've implemented a complete comments system following Clean Architecture!
+
+You learned:
+✓ Repository pattern
+✓ Use case design (CQRS)
+✓ HTTP handler implementation
+✓ Pagination
+✓ Authorization
+✓ Input validation
+✓ Error handling
+
+This same pattern applies to ANY feature you build next!
+
+Good luck! 🚀
+
+================================================================================
+                            END OF GUIDE
+================================================================================
+
+Version: 1.0
+Created: 2025-10-22
+Project: Running Forum
+Feature: Comments System
+Status: Complete Implementation Guide

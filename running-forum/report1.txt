@@ -1,0 +1,958 @@
+================================================================================
+                    RUNNING FORUM PROJECT - FILE ANALYSIS REPORT
+================================================================================
+
+PROJECT OVERVIEW:
+-----------------
+This is a web forum application built with Go following Clean Architecture principles.
+The project enables user communication, post categorization, likes/dislikes, filtering,
+and implements authentication with sessions/cookies. It uses SQLite as the database
+and includes both backend API server and frontend client server.
+
+================================================================================
+                         ROOT LEVEL CONFIGURATION FILES
+================================================================================
+
+1. go.mod
+   - Go module definition file
+   - Module name: github.com/arnald/forum
+   - Go version: 1.24.4
+   - Dependencies: google/uuid, mattn/go-sqlite3, golang.org/x/crypto
+
+2. go.sum
+   - Go module checksums for dependency verification
+
+3. Makefile
+   - Build automation and CI/CD commands
+   - Defines targets for: formatting, linting, testing, benchmarking
+   - Tools installation: goimports, staticcheck, golangci-lint
+   - Includes database cleanup and help commands
+   - CI pipeline: format checking, linting, and testing with coverage
+
+4. Dockerfile
+   - Multi-stage Docker build configuration
+   - Builder stage: Uses golang:1.24.4-alpine, compiles Go binaries with CGO for SQLite
+   - Runtime stage: Minimal alpine image with server binary
+   - Exposes ports 8080 (server) and 3000 (client)
+   - Environment variables for server, client, database, and session configuration
+
+5. README.md
+   - Project architecture documentation
+   - Explains Clean Architecture design with three layers:
+     * Domain Layer (core entities, no dependencies)
+     * Application Layer (use cases, business logic)
+     * Infrastructure Layer (HTTP, database, external resources)
+   - Describes separation of concerns and dependency inversion principles
+
+6. LICENSE
+   - MIT License, Copyright 2025 Arnald
+
+7. .env.example
+   - Environment variable template
+   - Server configuration: host, port, timeouts, API context
+   - Client configuration: host, port, timeouts
+   - Database configuration: SQLite path, migration/seeding flags
+   - Session configuration: cookie settings, expiry, cleanup intervals
+   - Handler timeout configurations
+
+8. .gitignore
+   - Ignores compiled binaries, test outputs, coverage files
+   - Ignores .env files, SQLite databases (.db files)
+   - Optional editor directories commented out
+
+9. .golangci.yml
+   - Linter configuration for golangci-lint
+   - Go version 1.24, enables most linters
+   - Disables specific linters: cyclop, funlen, godox, etc.
+
+10. api_calls.md
+    - API documentation example showing health check endpoint curl command
+
+11. Forum_Collections.json
+    - Postman collection for API testing
+    - Includes endpoints: Health Check, Register, Login by Username, Login by Email
+    - Example request bodies for user registration and authentication
+
+================================================================================
+                          PROJECT SPECIFICATION FILES
+================================================================================
+
+12. forum.txt
+    - Main project requirements document
+    - Objectives: user communication, category association, likes/dislikes, filtering
+    - Database: SQLite requirement with entity relationship diagrams
+    - Authentication: registration, login with session cookies and UUID
+    - Password encryption requirement (bonus)
+    - Communication: posts and comments (only registered users can create)
+    - Likes/Dislikes: only registered users can interact
+    - Filtering: by categories, created posts, liked posts
+    - Docker deployment requirement
+
+13. forum-authentication.txt
+    - OAuth authentication extension specification
+    - Requires implementing Google and GitHub authentication
+    - Additional authentication methods possible (Facebook)
+
+14. forum-security.txt
+    - Security features specification
+    - HTTPS protocol with SSL certificates
+    - Cipher suites implementation
+    - Rate limiting requirement
+    - Password and database encryption
+    - Session cookie security with UUID
+    - Attack-resistant session management
+
+15. forum-moderation.txt
+    - Moderation system specification
+    - Four user types: Guests, Users, Moderators, Administrators
+    - Guests: read-only access
+    - Users: create, comment, like/dislike
+    - Moderators: delete/report posts, request admin role
+    - Administrators: promote/demote moderators, manage categories, delete content
+
+16. forum-image-upload.txt
+    - Image upload feature specification
+    - Supports JPEG, PNG, GIF formats
+    - Maximum image size: 20MB
+    - Image display alongside post text
+
+17. forum-advanced-features.txt
+    - Advanced features specification
+    - User notifications for likes/dislikes and comments
+    - Activity page showing user's posts, likes/dislikes, comments
+    - Edit/Remove functionality for posts and comments
+
+18. report.txt
+    - Existing report file (purpose unknown from context)
+
+================================================================================
+                          DATABASE FILES (db/)
+================================================================================
+
+19. db/migrations/schema.sql
+    - Database schema definition
+    - Tables: users, sessions, categories, topics, comments, votes
+    - Users table: id (TEXT/UUID), email (unique), username (unique), password_hash, timestamps
+    - Sessions table: token (PK), user_id, expiry, refresh_token with expiration
+    - Categories table: id (auto-increment), name (unique), description, creator reference
+    - Topics table: id, user_id, category_id, title, content, image_path, timestamps
+    - Comments table: id, user_id, topic_id, content, timestamps
+    - Votes table: id, user_id, topic/comment reference, reaction_type (-1 or 1)
+    - Foreign key constraints with CASCADE delete
+    - Email validation constraint in users table
+
+20. db/migrations/indexes.sql
+    - Performance optimization indexes
+    - Indexes on: users.email, users.username, users.created_at
+    - Indexes on: sessions.user_id, sessions.expires_at
+
+21. db/seeds/dev_data.sql
+    - Development seed data
+    - Three test users: dev_user1, dev_user2, forum_admin
+    - Pre-hashed passwords for testing
+    - Sample sessions with 7-day expiry and 30-day refresh tokens
+    - Three categories: General Discussion, Feedback, Off-Topic
+    - Sample topics and comments for each category
+    - Sample votes (likes/dislikes)
+
+================================================================================
+                     COMMAND LINE ENTRY POINTS (cmd/)
+================================================================================
+
+22. cmd/server/main.go
+    - Backend API server entry point
+    - Loads configuration from .env file
+    - Initializes SQLite database with migrations and seeds
+    - Sets up infrastructure providers (repositories)
+    - Creates application services layer
+    - Starts HTTP server with logger and services
+
+23. cmd/client/main.go
+    - Frontend client server entry point
+    - Loads client-specific configuration
+    - Sets up HTTP routes for static files and home page
+    - Serves frontend HTML templates and assets
+    - Configurable timeouts for HTTP operations
+
+24. cmd/client/config/config.go
+    - Client configuration loader
+    - Reads .env file for client settings
+    - Defines HTTP timeout configurations
+    - Validates host and port settings
+    - Returns Client struct with parsed configuration
+
+25. cmd/client/handler/handler.go
+    - Client request handlers
+    - HomePage handler: serves main page with categories
+    - Loads categories from JSON file
+    - Parses and executes HTML templates
+    - 404 error handler with custom template
+    - Uses path resolver for file locations
+
+26. cmd/client/helpers/color.go
+    - Color validation and normalization utilities
+    - Prepares category colors for display
+    - Validates hex color format (#RGB or #RRGGBB)
+    - Defaults to #00c6ff if invalid color provided
+
+27. cmd/client/domain/categories.go
+    - Client-side domain models
+    - CategoryData structure for JSON deserialization
+    - Category struct with name, color, slug, description, topics
+    - Logo struct with URL and dimensions
+    - Topic struct with title and ID
+
+28. cmd/client/data/categories.json
+    - Sample category data for frontend
+    - Includes categories: Get started, Newsroom, Share your knowledge
+    - Each category has: id, name, color, description, topic count, logo
+    - Contains sample topics for each category
+
+================================================================================
+                     INTERNAL CONFIGURATION (internal/config/)
+================================================================================
+
+29. internal/config/config.go
+    - Server configuration management
+    - ServerConfig struct with all application settings
+    - Database configuration: driver, path, pragma, migration/seed flags
+    - Session manager configuration: cookie settings, expiry, security
+    - Timeout configurations for handlers and use cases
+    - LoadConfig() function reads from .env file
+    - Validates required settings (host, port format)
+    - Defaults provided for all configuration values
+
+================================================================================
+                   APPLICATION LAYER (internal/app/)
+================================================================================
+
+30. internal/app/services.go
+    - Central application services orchestrator
+    - Defines Queries struct: GetTopic, GetAllTopics, UserLogin handlers
+    - Defines Commands struct: UserRegister, CreateTopic, UpdateTopic, etc.
+    - NewServices() factory function wires up all use cases
+    - Injects dependencies: repositories, UUID provider, encryption provider
+    - Separates read operations (Queries) from write operations (Commands)
+
+31. internal/app/user/commands/userRegister.go
+    - User registration use case
+    - Takes username, email, password as input
+    - Generates UUID for new user
+    - Validates email format
+    - Encrypts password using bcrypt
+    - Delegates to repository for database insertion
+    - Returns created User entity
+
+32. internal/app/user/commands/userRegister_test.go
+    - Unit tests for user registration
+    - Tests successful registration scenario
+    - Tests validation and error cases
+
+33. internal/app/user/queries/userLogin.go
+    - Base user login query interface (appears to be refactored)
+
+34. internal/app/user/queries/userLoginEmail.go
+    - Email-based login use case
+    - Takes email and password as input
+    - Retrieves user by email from repository
+    - Verifies password using bcrypt comparison
+    - Returns user if authentication successful
+    - Returns error if credentials invalid
+
+35. internal/app/user/queries/userLoginEmail_test.go
+    - Unit tests for email login
+
+36. internal/app/user/queries/userLoginUsername.go
+    - Username-based login use case
+    - Similar to email login but uses username
+    - Password verification with bcrypt
+    - Returns authenticated user or error
+
+37. internal/app/user/queries/userLoginUsername_test.go
+    - Unit tests for username login
+
+38. internal/app/user/queries/userLogin_test.go
+    - Additional login tests
+
+39. internal/app/user/queries/getallusers.go
+    - Use case to retrieve all users (not fully implemented)
+
+40. internal/app/user/queries/errors.go
+    - User query error definitions
+    - ErrPasswordMismatch for authentication failures
+
+41. internal/app/topics/commands/createTopic.go
+    - Create topic use case
+    - Takes user, title, content, image path, category ID
+    - Creates Topic entity with user ID
+    - Delegates to repository for persistence
+    - Returns created topic or error
+
+42. internal/app/topics/commands/createTopic_test.go
+    - Unit tests for topic creation
+
+43. internal/app/topics/commands/updateTopic.go
+    - Update topic use case
+    - Validates user owns the topic
+    - Updates title, content, image path, category
+    - Delegates to repository
+
+44. internal/app/topics/commands/updateTopic_test.go
+    - Unit tests for topic updates
+
+45. internal/app/topics/commands/deleteTopic.go
+    - Delete topic use case
+    - Validates user ownership
+    - Delegates to repository for deletion
+
+46. internal/app/topics/queries/getTopic.go
+    - Get single topic by ID use case
+    - Retrieves topic with all details
+    - Delegates to repository
+
+47. internal/app/topics/queries/getAllTopics.go
+    - Get all topics with pagination use case
+    - Supports filtering and ordering
+    - Returns paginated results
+    - Calculates total pages
+
+48. internal/app/topics/queries/errors.go
+    - Topic query error definitions
+
+49. internal/app/categories/commands/createCategory.go
+    - Create category use case
+    - Takes name, description, creator ID
+    - Delegates to repository
+
+50. internal/app/categories/commands/updateCategory.go
+    - Update category use case
+    - Updates name and description
+
+51. internal/app/categories/commands/deleteCategory.go
+    - Delete category use case
+    - Validates user permissions
+
+52. internal/app/categories/queries/getCategoryByID.go
+    - Get category by ID use case
+    - Returns category with topics
+
+53. internal/app/health/queries/healthcheck.go
+    - Health check response structure
+    - StatusUp and StatusDown constants
+    - Returns service health status with timestamp
+
+================================================================================
+                    DOMAIN LAYER (internal/domain/)
+================================================================================
+
+54. internal/domain/user/user.go
+    - User entity definition
+    - Fields: ID (UUID), Username, Email, Password (hashed), Role
+    - AvatarURL (optional), CreatedAt timestamp
+    - Pure data structure with no business logic
+
+55. internal/domain/user/repository.go
+    - User repository interface
+    - Methods: GetAll, UserRegister, GetUserByUsername, GetUserByEmail
+    - Context-aware operations
+    - Returns User entities or errors
+
+56. internal/domain/topic/topic.go
+    - Topic entity definition
+    - Fields: ID, UserID, OwnerUsername, CategoryID
+    - Title, Content, ImagePath
+    - CreatedAt, UpdatedAt timestamps
+    - Associated Comments array
+
+57. internal/domain/topic/repository.go
+    - Topic repository interface
+    - Methods: CreateTopic, UpdateTopic, DeleteTopic
+    - GetTopicByID, GetAllTopics (with pagination)
+    - GetTotalTopicsCount for pagination
+    - Context-aware operations
+
+58. internal/domain/category/category.go
+    - Category entity definition
+    - Fields: ID, Name, Description, CreatedBy, CreatedAt
+    - Associated Topics array
+
+59. internal/domain/category/repository.go
+    - Category repository interface
+    - Methods: CreateCategory, UpdateCategory, DeleteCategory
+    - GetCategoryByID, GetAllCategories
+    - Context-aware operations
+
+60. internal/domain/comment/comment.go
+    - Comment entity definition
+    - Fields: ID, UserID, TopicID, Content, Username
+    - CreatedAt, UpdatedAt timestamps
+
+61. internal/domain/session/session.go
+    - Session entity definition
+    - Fields: AccessToken, RefreshToken, UserID
+    - Expiry, RefreshTokenExpiry timestamps
+    - JSON serialization tags
+
+62. internal/domain/session/sessionManager.go
+    - Session manager interface
+    - Methods: CreateSession, GetSession, DeleteSession
+    - GetUserFromSession, ValidateSession
+    - GetSessionFromSessionTokens (handles access & refresh tokens)
+    - NewSessionCookie for HTTP cookie creation
+    - DeleteSessionWhenNewCreated for session limit enforcement
+
+================================================================================
+                INFRASTRUCTURE LAYER (internal/infra/)
+================================================================================
+
+63. internal/infra/services.go
+    - Infrastructure services provider
+    - NewInfraProviders creates repository instances
+    - NewHTTPServer factory function
+    - Wires database connections to repositories
+
+64. internal/infra/http/server.go
+    - HTTP server implementation
+    - Manages routes, middleware, session management
+    - AddHTTPRoutes() defines all API endpoints:
+      * /api/v1/health (requires auth)
+      * /api/v1/login/email and /username
+      * /api/v1/register
+      * /api/v1/topics/* (create, update, delete, get, all)
+      * /api/v1/categories/* (create, update, delete, get)
+    - Middleware chain for authentication (required/optional)
+    - CORS middleware wrapping
+    - Configurable timeouts from config
+    - Session manager initialization
+
+65. internal/infra/http/health/handler.go
+    - Health check endpoint handler
+    - GET method only
+    - Returns status "UP" with timestamp
+    - Uses logger for errors
+
+66. internal/infra/http/user/register/registerhandler.go
+    - User registration HTTP handler
+    - POST method only
+    - Parses JSON request body
+    - Validates username, email, password
+    - Calls user registration use case
+    - Creates session for new user
+    - Sets session cookies
+    - Returns user ID and success message
+    - Handles timeout from config
+
+67. internal/infra/http/user/login/loginUsernameHandler.go
+    - Username-based login HTTP handler
+    - POST method only
+    - Validates username and password format
+    - Calls login use case
+    - Creates session on success
+    - Sets session and refresh token cookies
+    - Returns user info
+
+68. internal/infra/http/user/login/LoginEmailHandler.go
+    - Email-based login HTTP handler
+    - Similar to username login but with email
+    - Validates email format
+    - Session creation and cookie management
+
+69. internal/infra/http/user/login/entities.go
+    - Request/response models for login handlers
+    - Shared structures for username and email login
+
+70. internal/infra/http/topic/createTopic/createTopicHandler.go
+    - Create topic HTTP handler
+    - POST method only, requires authentication
+    - Validates title, content, category ID, optional image path
+    - Gets authenticated user from context
+    - Calls create topic use case
+    - Returns success message
+
+71. internal/infra/http/topic/updateTopic/updateTopicHandler.go
+    - Update topic HTTP handler
+    - Requires authentication
+    - Validates ownership
+    - Updates topic fields
+
+72. internal/infra/http/topic/deleteTopic/deleteTopicHandler.go
+    - Delete topic HTTP handler
+    - Requires authentication
+    - Validates ownership
+    - Deletes topic
+
+73. internal/infra/http/topic/getTopic/getTopicHandler.go
+    - Get single topic HTTP handler
+    - Public endpoint (no auth required)
+    - Returns topic details
+
+74. internal/infra/http/topic/getAllTopics/getAllTopicsHandler.go
+    - Get all topics with pagination HTTP handler
+    - Public endpoint
+    - Supports query parameters for page, size, orderBy, filter
+    - Returns paginated results with metadata
+
+75. internal/infra/http/category/createCategory/createCategoryHandler.go
+    - Create category HTTP handler
+    - Requires authentication
+    - Validates name and description
+    - Creates category
+
+76. internal/infra/http/category/updateCategory/updateCategoryHandler.go
+    - Update category HTTP handler
+    - Requires authentication
+    - Updates category fields
+
+77. internal/infra/http/category/deleteCategory/deleteCategoryHandler.go
+    - Delete category HTTP handler
+    - Requires authentication
+    - Deletes category
+
+78. internal/infra/http/category/getCategoryByID/getCategoryByIDHandler.go
+    - Get category by ID HTTP handler
+    - Optional authentication
+    - Returns category with topics
+
+================================================================================
+                  MIDDLEWARE (internal/infra/middleware/)
+================================================================================
+
+79. internal/infra/middleware/services.go
+    - Middleware orchestrator
+    - NewMiddleware factory function
+    - Wraps authorization middleware
+
+80. internal/infra/middleware/entities.go
+    - Middleware interfaces and types
+    - Authorization interface with Required and Optional methods
+    - authorization struct with session manager
+
+81. internal/infra/middleware/requireAuthorization.go
+    - Required authentication middleware
+    - Validates session and refresh tokens from cookies
+    - Checks token expiration
+    - Refreshes access token if needed
+    - Retrieves user from session
+    - Adds user to request context
+    - Returns 401 Unauthorized if auth fails
+
+82. internal/infra/middleware/requireAuthorization_test.go
+    - Unit tests for required auth middleware
+
+83. internal/infra/middleware/optionalAuthorization.go
+    - Optional authentication middleware
+    - Allows requests to proceed without auth
+    - If tokens present, validates and adds user to context
+    - If tokens invalid/expired, continues without user
+    - Used for public endpoints that benefit from knowing user
+
+84. internal/infra/middleware/optionalAuthorization_test.go
+    - Unit tests for optional auth middleware
+
+85. internal/infra/middleware/services_test.go
+    - Middleware service tests
+
+86. internal/infra/middleware/cors.go
+    - CORS middleware implementation
+    - Sets Access-Control headers for cross-origin requests
+    - Allows: GET, POST, PUT, DELETE, OPTIONS methods
+    - Allows: Content-Type, Authorization headers
+    - Handles preflight OPTIONS requests
+    - 24-hour cache for CORS preflight
+
+87. internal/infra/middleware/helpers.go
+    - Middleware helper functions
+    - CheckTokenExpiration: checks if access/refresh tokens expired
+    - GetTokensFromRequest: extracts tokens from cookies
+    - GetUserFromContext: retrieves user from request context
+    - Uses "user" key for context storage
+
+================================================================================
+              STORAGE/DATABASE (internal/infra/storage/)
+================================================================================
+
+88. internal/infra/storage/sqlite/init.go
+    - SQLite database initialization
+    - InitializeDB: creates DB directory, opens connection, runs migrations/seeds
+    - OpenDB: opens SQLite connection with pragma settings
+    - migrateDB: executes schema.sql and indexes.sql
+    - seedDB: runs seed data for development
+    - execSQLFile: utility to execute SQL files
+    - Configurable max open connections (1 for SQLite)
+
+89. internal/infra/storage/sqlite/repositories.go
+    - Repository factory
+    - NewRepositories creates all repository instances
+    - Returns Repositories struct with UserRepo, CategoryRepo, TopicRepo
+    - Injects database connection to each repository
+
+90. internal/infra/storage/sqlite/users/userRepo.go
+    - User repository SQLite implementation
+    - GetAll: retrieves all users (TODO: not implemented)
+    - UserRegister: inserts new user with UUID, hashed password
+    - GetUserByEmail: queries user by email
+    - GetUserByUsername: queries user by username
+    - GetUserByIdentifier: unified query by email or username
+    - Error mapping for SQLite-specific errors
+
+91. internal/infra/storage/sqlite/users/errors.go
+    - User repository error definitions
+    - ErrUserNotFound, ErrEmailAlreadyExists, ErrUsernameAlreadyExists
+    - MapSQLiteError: maps database errors to domain errors
+
+92. internal/infra/storage/sqlite/topics/topicRepo.go
+    - Topic repository SQLite implementation
+    - CreateTopic: inserts topic with user, category references
+    - UpdateTopic: updates topic in transaction
+    - DeleteTopic: removes topic by ID and user ownership
+    - GetTopicByID: retrieves single topic with comments
+    - GetAllTopics: paginated query with filtering and ordering
+    - GetTotalTopicsCount: counts topics for pagination
+    - Supports LEFT JOIN with comments
+    - Transaction handling for updates
+
+93. internal/infra/storage/sqlite/topics/errors.go
+    - Topic repository error definitions
+    - ErrTopicNotFound, ErrUserNotFound, ErrUnauthorized
+
+94. internal/infra/storage/sqlite/categories/categoryRepo.go
+    - Category repository SQLite implementation
+    - CreateCategory: inserts category with creator reference
+    - GetAllCategories: retrieves all categories
+    - GetCategoryByID: gets category with associated topics
+    - UpdateCategory: updates category fields
+    - DeleteCategory: removes category with ownership validation
+    - Error handling for unique constraints and foreign keys
+
+95. internal/infra/storage/sqlite/categories/errors.go
+    - Category repository error definitions
+    - ErrCategoryAlreadyExists, ErrCategoryNotFound, ErrUserNotFound
+
+96. internal/infra/storage/sessionstore/sessionManager.go
+    - Session manager SQLite implementation
+    - CreateSession: generates UUID tokens, stores in database
+    - GetSession: retrieves session by token
+    - DeleteSession: removes session
+    - GetUserFromSession: fetches user for valid session
+    - GetSessionFromSessionTokens: validates access and refresh tokens
+    - ValidateSession: checks if session exists and valid
+    - NewSessionCookie: creates HTTP cookie with security settings
+    - DeleteSessionWhenNewCreated: enforces max sessions per user limit
+    - Cleanup: removes expired sessions (can be run periodically)
+    - Token generation using UUID provider
+    - Expiry calculations based on configuration
+
+97. internal/infra/storage/sessionstore/errors.go
+    - Session store error definitions
+    - ErrSessionNotFound, ErrInvalidRefreshToken
+
+================================================================================
+                      LOGGING (internal/infra/logger/)
+================================================================================
+
+98. internal/infra/logger/logger.go
+    - Structured logging implementation
+    - Levels: Info, Error, Fatal, Off
+    - PrintInfo: logs informational messages
+    - PrintError: logs errors
+    - PrintFatal: logs fatal error and exits
+    - Thread-safe with mutex
+    - Formats: timestamp, level, message, properties
+    - Stack traces for fatal errors
+    - Configurable output writer and minimum level
+
+99. internal/infra/logger/errors.go
+    - Logger-specific error definitions
+    - ErrInvalidRequestMethod for HTTP method validation
+
+================================================================================
+                    UTILITY PACKAGES (internal/pkg/)
+================================================================================
+
+100. internal/pkg/bcrypt/encryption.go
+     - Password encryption utilities
+     - Provider interface with Generate and Matches methods
+     - Generate: creates bcrypt hash with cost 12
+     - Matches: verifies password against hash
+     - Error handling for mismatched passwords
+     - Wraps golang.org/x/crypto/bcrypt
+
+101. internal/pkg/uuid/uuid.go
+     - UUID generation utilities
+     - Provider interface with NewUUID method
+     - Wraps google/uuid library
+     - Returns string representation of UUID
+
+102. internal/pkg/uuid/uuid_test.go
+     - Unit tests for UUID generation
+
+103. internal/pkg/path/path.go
+     - Path resolution utilities
+     - Resolver struct finds project root by locating go.mod
+     - GetPath: converts relative paths to absolute project paths
+     - Searches parent directories until go.mod found
+     - Used for loading templates, configs, seed data
+
+104. internal/pkg/helpers/json_response.go
+     - HTTP JSON response utilities
+     - RespondWithJSON: sends structured JSON responses
+     - ResponseWrapper with Info (pagination) and Data
+     - Info struct: totalRecords, currentPage, pageSize, pagination links
+     - RespondWithError: sends error responses
+     - Error responses (4xx/5xx) send raw payload
+     - Success responses wrap with metadata
+
+105. internal/pkg/helpers/body_request.go
+     - HTTP request body parsing
+     - ParseBodyRequest: deserializes JSON to struct
+     - DisallowUnknownFields for strict parsing
+     - Returns parsed struct or error
+
+106. internal/pkg/helpers/configuration.go
+     - Configuration file utilities
+     - ParseEnv: parses .env file format
+     - GetEnv: reads from OS env, then .env file, then default
+     - GetEnvDuration: parses duration in seconds
+     - GetEnvBool: parses boolean values
+     - GetEnvInt: parses integer values
+     - Supports comments and empty lines in .env
+
+107. internal/pkg/helpers/emailValidation.go
+     - Email validation utilities
+     - ValidateEmail: checks format with regex
+     - Returns ErrEmptyEmail or ErrInvalidEmailFormat
+     - Regex pattern for standard email format
+
+108. internal/pkg/helpers/context.go
+     - Context utilities
+     - GetUserFromContext: retrieves user from context by key
+     - Returns ErrNoUserFound if not present
+     - Type-safe user extraction
+
+109. internal/pkg/validator/validator.go
+     - Generic validation framework
+     - Validator struct with errors map and rules
+     - ValidationRule with field name and validation functions
+     - Check: adds error if validation fails
+     - ValidateStruct: applies rules to struct fields using reflection
+     - Built-in validators:
+       * required, optional, minLength, maxLength
+       * isPositiveInt, maxInt
+       * validEmail, validImagePath, validOrderBy
+     - In, Matches, Unique helper functions
+     - ToStringErrors: formats all errors as string
+
+110. internal/pkg/validator/validationCases.go
+     - Specific validation rule sets
+     - Constants: MinUsernameLength (3), MaxUsernameLength (50)
+     - MinPasswordLength (8), MaxPasswordLength (72)
+     - MinTopicTitleLength (5), MaxTopicTitleLength (100)
+     - MinTopicContentLength (10), MaxTopicContentLength (1000)
+     - MaxPageSize (100)
+     - ValidateUserRegistration: username, email, password rules
+     - ValidateUserLoginEmail: email, password rules
+     - ValidateUserLoginUsername: username, password rules
+     - ValidateCreateTopic: title, content, optional image path rules
+     - ValidateGetAllTopics: pagination and ordering rules
+
+111. internal/pkg/testing/helpers.go
+     - Testing utilities for test setup
+
+112. internal/pkg/testing/mocks.go
+     - Mock implementations for testing
+     - MockRepository: implements all repository interfaces
+     - Function fields for customizing mock behavior
+     - MockSessionManager: implements session.Manager interface
+     - MockEncryptionProvider: implements bcrypt.Provider
+     - MockUUIDProvider: implements uuid.Provider
+     - ErrTest: standard test error constant
+
+================================================================================
+                        FRONTEND FILES (frontend/)
+================================================================================
+
+113. frontend/html/layouts/base.html
+     - Base HTML template
+     - Defines overall page structure
+     - Includes: meta tags, favicon, Google Fonts (Rubik)
+     - Links to CSS files: base, layout, pages, components
+     - Template blocks: title, content
+     - Includes navbar and footer partials
+     - Links to JavaScript file
+
+114. frontend/html/pages/home.html
+     - Home page template
+     - Extends base layout
+     - Includes category_details and categories partials
+     - Displays "Welcome to Forum" title
+
+115. frontend/html/pages/not_found.html
+     - 404 error page template
+     - Displays status code, status text, error message
+     - Custom styling for error page
+
+116. frontend/html/partials/navbar.html
+     - Navigation bar partial template
+     - Logo, search bar, user profile, notifications
+     - Navigation links
+
+117. frontend/html/partials/footer.html
+     - Footer partial template
+     - Copyright, links, social media
+
+118. frontend/html/partials/category_details.html
+     - Category detail view partial
+     - Displays category information
+
+119. frontend/html/partials/categories.html
+     - Categories list partial
+     - Displays all forum categories
+
+120. frontend/static/css/base.css
+     - Base CSS styles
+     - Typography, colors, CSS reset
+     - Global styles
+
+121. frontend/static/css/layout.css
+     - Layout CSS
+     - Grid, flexbox layouts
+     - Responsive design
+
+122. frontend/static/css/pages.css
+     - Page-specific CSS
+     - Styles for home, topics, user pages
+
+123. frontend/static/css/components.css
+     - Component CSS
+     - Buttons, forms, cards, modals
+     - Reusable UI components
+
+124. frontend/static/js/script.js
+     - Client-side JavaScript
+     - DOM manipulation, event handlers
+     - AJAX calls to API
+     - Form validation
+
+125. frontend/static/images/*
+     - Static image assets
+     - User avatars, category logos, icons
+     - Images: user-avatar.png, search-icon.png, logo-icon.png
+     - Like/dislike icons, comment icons, notification icons
+     - Category images: get_started.png, newsroom.png, share_your_knowledge.png
+
+================================================================================
+                      DOCUMENTATION (docs/)
+================================================================================
+
+126. docs/diagrams/user_registration_flow.mmd
+     - Mermaid diagram for user registration flow
+     - Visual documentation of registration process
+
+127. docs/diagrams/user_login_flow.mmd
+     - Mermaid diagram for user login flow
+     - Shows authentication sequence
+
+128. docs/diagrams/create_new_post_flow.mmd
+     - Mermaid diagram for post creation flow
+     - Illustrates topic creation process
+
+129. docs/diagrams/comment_creation_flow.mmd
+     - Mermaid diagram for comment creation flow
+     - Shows comment posting sequence
+
+130. docs/diagrams/image_upload_flow.mmd
+     - Mermaid diagram for image upload flow
+     - Documents image upload process
+
+131. docs/diagrams/post_moderation_flow.mmd
+     - Mermaid diagram for post moderation
+     - Shows moderation workflow
+
+132. docs/diagrams/moderation_flow.mmd
+     - General moderation flow diagram
+     - Overall moderation system
+
+133. docs/diagrams/activity_feed_flow.mmd
+     - Mermaid diagram for activity feed
+     - User activity tracking visualization
+
+134. docs/diagrams/oAuth_login_flow_gitHub.mmd
+     - Mermaid diagram for GitHub OAuth flow
+     - OAuth authentication sequence
+
+================================================================================
+                            ARCHITECTURE SUMMARY
+================================================================================
+
+The project follows Clean Architecture with clear separation of concerns:
+
+DOMAIN LAYER (innermost):
+- Pure business entities: User, Topic, Category, Comment, Session
+- Repository interfaces defining data operations
+- No dependencies on outer layers
+- Core business rules and data structures
+
+APPLICATION LAYER (middle):
+- Use case implementations (Commands and Queries)
+- Business logic orchestration
+- Depends only on Domain layer
+- User registration, login, topic/category CRUD operations
+- Validation and business rules enforcement
+
+INFRASTRUCTURE LAYER (outermost):
+- HTTP server and handlers
+- SQLite database implementation
+- Session management with cookies
+- Middleware (authentication, CORS)
+- Logger implementation
+- External service integrations
+- Depends on inner layers through interfaces
+
+KEY DESIGN PATTERNS:
+- Repository Pattern: abstracts data access
+- Dependency Injection: through constructors and factory functions
+- CQRS-like separation: Commands vs Queries
+- Middleware Chain: composable HTTP middleware
+- Factory Pattern: service and handler creation
+- Interface Segregation: small, focused interfaces
+
+SECURITY FEATURES:
+- Bcrypt password hashing
+- UUID-based session tokens
+- HTTP-only, secure cookies
+- Session expiration with refresh tokens
+- CORS protection
+- Authentication middleware
+- Context-based user propagation
+
+DATABASE DESIGN:
+- Normalized schema with foreign keys
+- Cascade delete for referential integrity
+- Indexes for performance
+- SQLite with WAL mode
+- Transaction support for data consistency
+
+API ARCHITECTURE:
+- RESTful endpoints
+- JSON request/response format
+- Pagination support
+- Filtering and ordering capabilities
+- Consistent error responses
+- Health check endpoint
+
+TESTING:
+- Unit tests for use cases
+- Mock implementations for dependencies
+- Test helpers and fixtures
+- Coverage reporting in Makefile
+
+DEPLOYMENT:
+- Docker multi-stage build
+- Separate server and client binaries
+- Environment-based configuration
+- Database migrations on startup
+- Seed data for development
+
+================================================================================
+                              END OF REPORT
+================================================================================
