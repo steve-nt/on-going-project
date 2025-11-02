@@ -1,93 +1,92 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[12pt, a4paper]{article}
+\usepackage[margin=2cm]{geometry}
 \usepackage[utf8]{inputenc}
-\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
 \usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{listings}
+\usepackage{float}
 \usepackage{xcolor}
-\usepackage{fancyhdr}
-\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{array}
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{15pt}
 
-% Code listing style
+% Listings settings
 \lstset{
-    basicstyle=\ttfamily\small,
-    breaklines=true,
-    frame=single,
-    backgroundcolor=\color{gray!10}
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  breakatwhitespace=true,
+  backgroundcolor=\color{gray!10},
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  columns=fullflexible
 }
-
-% Header and footer
-\pagestyle{fancy}
-\fancyhf{}
-\rhead{Lab 4: Secure E-Mail and DNS}
-\lhead{Network Security Assignment}
-\rfoot{Page \thepage}
-
-\title{\textbf{Lab 4: Secure E-Mail and DNS}\\
-\large Network Security Implementation Report}
-\author{Steven}
-\date{\today}
 
 \begin{document}
 
-\maketitle
-\tableofcontents
-\newpage
+\begin{titlepage}
+    \centering
+    \vspace*{3cm}
+    {\LARGE\bfseries  Lab:4 Secure E-Mail and DNS\par}
+    \vspace{2cm}
+   
+    \vspace{2cm}
+    {\large Secure computer networks D7075E\par}
+    \vspace{2cm}
+    
+    \vspace{1cm}
+    {\large \textbf{Group 35} \par} 
+    \vspace{1.5cm}
+    {\large
+    Vatousiadi Spyridoula -- spyvat-5@student.ltu.se\\
+    Stefanos Ntentopoulos -- stente-5@student.ltu.se \\
+   
+        }
+    \vspace{2cm}
+    {\large 1 November 2025\par}
+    \begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Lulea_Logo.png}
+     \label{fig:placeholder}
+\end{figure}
+\end{titlepage}
 
-%==============================================================================
-\section{Executive Summary}
-%==============================================================================
 
-This report documents the implementation and analysis of email and DNS security mechanisms in a containerized network environment. The lab demonstrates vulnerabilities in unsecured email and DNS systems, followed by the implementation of industry-standard security protocols including SPF, DKIM, DMARC, and DNSSEC.
+\pagenumbering{arabic}
+\setcounter{page}{1}
 
-The laboratory successfully achieved all objectives:
-\begin{itemize}
-    \item Established a functional mail server infrastructure with DNS support
-    \item Demonstrated email forgery and DNS spoofing attacks on unsecured systems
-    \item Implemented and verified SPF, DKIM, and DMARC email authentication
-    \item Configured DNSSEC for cryptographic DNS validation
-    \item Analyzed attack vectors before and after security implementation
-\end{itemize}
-
-%==============================================================================
 \section{Introduction}
-%==============================================================================
-
-\subsection{Background}
-
-Email and DNS are foundational protocols of the Internet, yet both were designed in an era when security was not a primary concern. The Simple Mail Transfer Protocol (SMTP) and Domain Name System (DNS) lack built-in authentication mechanisms, making them vulnerable to various attacks including:
-
-\begin{itemize}
-    \item \textbf{Email Spoofing}: Forging sender addresses to impersonate trusted entities
-    \item \textbf{DNS Spoofing}: Redirecting DNS queries to malicious servers
-    \item \textbf{Man-in-the-Middle Attacks}: Intercepting communications between legitimate parties
-    \item \textbf{Phishing}: Social engineering attacks leveraging spoofed identities
-\end{itemize}
 
 \subsection{Objectives}
 
-The primary objectives of this laboratory exercise were:
+This report documents the implementation and analysis of email and DNS security mechanisms in a containerized network environment. The lab demonstrates how to build a realistic ISP/domain network topology with mail and DNS infrastructure, demonstrate vulnerabilities in unsecured email and DNS systems, and how to implement security mechanisms: SPF, DKIM, DMARC, and DNSSEC. Finally, we will validate security improvements through testing and traffic analysis.
 
-\begin{enumerate}
-    \item Build a realistic ISP/domain network topology with mail and DNS infrastructure
-    \item Demonstrate vulnerabilities in unsecured email and DNS systems
-    \item Implement security mechanisms: SPF, DKIM, DMARC, and DNSSEC
-    \item Validate security improvements through testing and traffic analysis
-    \item Document the impact of security controls on attack effectiveness
-\end{enumerate}
 
 \subsection{Lab Environment}
 
-The laboratory environment consists of four Docker containers:
+The project began with the setting up the topology of our lab. The lab environment consists of four Docker containers:
 
 \begin{itemize}
-    \item \textbf{DNS Server} (172.20.0.10): BIND9 authoritative nameserver
-    \item \textbf{Mail Server} (172.20.0.20): Postfix SMTP server with OpenDKIM
-    \item \textbf{Client} (172.20.0.30): User workstation for testing
-    \item \textbf{Attacker} (172.20.0.40): Adversarial host for attack simulations
+    \item \textbf{DNS Server} (172.20.0.10): BIND9 authoritative nameserver. This container acts as the authoritative DNS server for the example.com domain using BIND. Its primary role is to provide name resolution (A records, MX records) and, later, to publish critical security records like SPF, DKIM, and DMARC, and to implement DNSSEC for zone signing.
+    
+    \item \textbf{Mail Server} (172.20.0.20): Postfix SMTP server with OpenDKIM. This container functions as the mail exchange server using Postfix and OpenDKIM. It handles the acceptance and processing of emails for user@example.com on standard ports (25, 587, 993). This server is used to demonstrate both the initial vulnerability to header forgery and the later mitigation provided by DKIM signing and SPF checks.
+    
+    \item \textbf{Client} (172.20.0.30): User workstation for testing. This container simulates the host machine or a user's email client. It is the primary testing point, used to query the DNS server and send emails via swaks. It serves as the target (or victim) for the DNS spoofing attack and the source for testing all security protocols.
+    
+    \item \textbf{Attacker} (172.20.0.40): Adversarial host for attack simulations. his container is the adversarial machine, hosting the necessary scripts (DNS spoofer and fake mail server) to execute the lab's required attacks, specifically targeting the client's DNS lookups and attempting to intercept mail traffic.
 \end{itemize}
 
-All containers operate on an isolated Docker network (172.20.0.0/16) to provide a controlled testing environment.
+All containers operate on an isolated Docker network 4lab\_labnet (172.20.0.0/16) to provide a controlled testing environment.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.2\textheight]{image/Docker Containers- Network.png}
+\end{figure}
+
+\newpage
 
 %==============================================================================
 \section{Theoretical Background}
@@ -211,11 +210,12 @@ _dmarc.example.com. IN TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com
     \item Protects brand reputation
 \end{itemize}
 
+
 %==============================================================================
 \section{Implementation}
 %==============================================================================
 
-\subsection{Phase 1: Initial Setup and Baseline Testing}
+\subsection{Initial Setup}
 
 \subsubsection{Environment Deployment}
 
@@ -225,17 +225,6 @@ The laboratory environment was deployed using Docker Compose with the following 
 docker compose up -d --build
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 1 - Container deployment output]
-
-Four containers were successfully created:
-\begin{itemize}
-    \item dns-server (BIND9)
-    \item mail-server (Postfix + OpenDKIM)
-    \item client (testing workstation)
-    \item attacker (adversarial simulation)
-\end{itemize}
-
-\textbf{Screenshot Reference}: [Step 2 - Docker compose ps showing all containers running]
 
 \subsubsection{DNS Functionality Verification}
 
@@ -248,7 +237,10 @@ dig @172.20.0.10 mail.example.com
 
 Expected result: mail.example.com resolves to 172.20.0.20
 
-\textbf{Screenshot Reference}: [Step 4 - DNS A record query]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.3\textheight]{image/Step 4 dig output showing A record.jpg}
+\end{figure}
 
 \textbf{MX Record Query:}
 \begin{lstlisting}[language=bash]
@@ -257,34 +249,42 @@ dig @172.20.0.10 example.com MX
 
 Expected result: MX record pointing to mail.example.com with priority 10
 
-\textbf{Screenshot Reference}: [Step 5 - DNS MX record query]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/5 Capture MX record query.jpg}
+\end{figure}
 
 \textbf{NS Record Query:}
 \begin{lstlisting}[language=bash]
 dig @172.20.0.10 example.com NS
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 6 - DNS NS record query]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/6 Capture NS record query.jpg}
+\end{figure}
 
 \subsubsection{Email Delivery Testing}
 
 Initial email functionality was verified using SWAKS (Swiss Army Knife for SMTP):
 
 \begin{lstlisting}[language=bash]
-swaks --to user@example.com \
-      --from testuser@client.example.com \
-      --server mail.example.com \
-      --header "Subject: Test Email 1" \
-      --body "This is a test email from the client."
+swaks --to user@example.com --from testuser@client.example.com --server mail.example.com --header "Subject: Test Email 1" --body "This is a test email from the client."
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 8 - First successful email delivery]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/8: Send First Test Email.jpg}
+\end{figure}
 
 The email was successfully queued and delivered, confirming baseline SMTP functionality.
 
-\textbf{Screenshot Reference}: [Step 9 - Mail server logs showing delivery]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.3\textheight]{image/9: Verify Email in Mail Server Logs.jpg}
+\end{figure}
 
-\subsection{Phase 2: Vulnerability Demonstration}
+\subsection{Demonstration of Vulnerabilities}
 
 \subsubsection{Email Header Forgery Attack}
 
@@ -299,29 +299,40 @@ swaks --to victim@example.com \
       --body "Please wire $50,000 to account 123456 immediately."
 \end{lstlisting}
 
-\textbf{Result}: The forged email was accepted and delivered without any validation.
+\textbf{Result}: As we cam see the forged email was accepted and delivered without any validation.
 
-\textbf{Screenshot Reference}: [Step 10 - Email forgery accepted]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/11: Verify Forged Email in Logs.jpg }
+\end{figure}
 
-\textbf{Analysis}: This demonstrates a critical vulnerability. An attacker can impersonate any user, including executives, to conduct phishing and business email compromise (BEC) attacks.
+\textbf{Analysis}: This demonstrates a critical vulnerability. An attacker can impersonate any user, including executives, to conduct various phishing attacks.
 
 \subsubsection{DNS Spoofing Attack}
 
-A DNS spoofing attack was simulated using the attacker container:
+In additions a DNS spoofing attack was simulated using the attacker container:
 
 \textbf{Terminal 1 - Fake Mail Server:}
 \begin{lstlisting}[language=bash]
 python3 /root/fake_mail_server.py
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 13 - Fake mail server running]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.2\textheight]{image/13: Start Fake Mail Server on Attacker.jpg}
+\end{figure}
+
+\newpage
 
 \textbf{Terminal 2 - DNS Spoofer:}
 \begin{lstlisting}[language=bash]
 python3 /root/fake_dns_server.py
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 14 - DNS spoofing attack active]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.2\textheight]{image/14: Start DNS Spoofing Attack.jpg}
+\end{figure} 
 
 \textbf{Client Configuration:}
 \begin{lstlisting}[language=bash]
@@ -330,11 +341,31 @@ echo "nameserver 172.20.0.40" > /etc/resolv.conf
 
 When the client was configured to use the attacker's DNS server, all email traffic was redirected to the fake mail server at 172.20.0.40.
 
-\textbf{Screenshot Reference}: [Step 15 - Intercepted email on fake server]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.3\textheight]{image/15: Send Email During Attack.jpg}
+\end{figure} 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.2\textheight]{image/15: Send Email During Attack Fake Mail Server.jpg}
+\end{figure} 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/15: Send Email During Attack Dns Spoof.jpg}
+\end{figure} 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/16: Verify DNS Spoofing.jpg}
+\end{figure} 
 
 \textbf{Analysis}: Without DNSSEC, clients cannot verify the authenticity of DNS responses, allowing attackers to redirect traffic to malicious servers.
 
-\subsection{Phase 3: SPF Implementation}
+\newpage
+
+\subsection{SPF Implementation}
 
 \subsubsection{SPF Record Configuration}
 
@@ -358,9 +389,12 @@ kill -HUP $(cat /var/run/named/named.pid)
 dig @172.20.0.10 example.com TXT
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 19 - SPF TXT record query]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/19: Verify SPF Record.jpg}
+\end{figure} 
 
-The SPF record was successfully published and resolving correctly.
+The SPF record was successfully published and resolving correctly. This SPF record states that only the mail server at 172.20.0.20 is authorized to send email for the example.com domain.
 
 \textbf{SPF Policy Interpretation:}
 \begin{itemize}
@@ -368,6 +402,8 @@ The SPF record was successfully published and resolving correctly.
     \item \textbf{ip4:172.20.0.20}: Authorize this IP to send mail
     \item \textbf{-all}: Hard fail for all other sources
 \end{itemize}
+
+\newpage
 
 \subsection{Phase 4: DKIM Implementation}
 
@@ -379,7 +415,10 @@ DKIM keys were automatically generated during mail server initialization:
 opendkim-genkey -b 2048 -d example.com -s default -v
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 3 - DKIM key generation in logs]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/3: Check Container Logs.jpg}
+\end{figure}
 
 Keys generated:
 \begin{itemize}
@@ -398,7 +437,7 @@ default._domainkey  IN  TXT  ( "v=DKIM1; h=sha256; k=rsa; "
     "...IDAQAB" )
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 21 - DKIM record added to DNS]
+\newpage
 
 \subsubsection{OpenDKIM Integration}
 
@@ -412,7 +451,6 @@ smtpd_milters = inet:127.0.0.1:8891
 non_smtpd_milters = inet:127.0.0.1:8891
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 23 - Postfix configuration with DKIM enabled]
 
 \subsubsection{DKIM Signature Verification}
 
@@ -426,7 +464,10 @@ swaks --to user@example.com \
       --body "This email should be DKIM signed"
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 26 - Email with DKIM signature]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.4\textheight]{image/26.1: Show the DKIM signature in an email.jpg }
+\end{figure}
 
 The delivered email contained a DKIM-Signature header:
 
@@ -440,6 +481,8 @@ DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=example.com;
 
 \textbf{Analysis}: The signature proves the email was authorized by the domain owner and has not been tampered with in transit.
 
+\newpage
+
 \subsection{Phase 5: DMARC Implementation}
 
 \subsubsection{DMARC Policy Configuration}
@@ -450,7 +493,10 @@ A DMARC policy was published to coordinate SPF and DKIM:
 _dmarc  IN  TXT  "v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com"
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 28 - DMARC record added to DNS]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.5\textheight]{image/28 - DMARC record added to DNS.jpg}
+\end{figure}
 
 \textbf{Policy Parameters:}
 \begin{itemize}
@@ -459,13 +505,18 @@ _dmarc  IN  TXT  "v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com"
     \item \textbf{rua}: Send aggregate reports to this address
 \end{itemize}
 
+\newpage
+
 \subsubsection{DMARC Verification}
 
 \begin{lstlisting}[language=bash]
 dig @172.20.0.10 _dmarc.example.com TXT
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 30 - DMARC TXT record query]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.5\textheight]{image/30: Verify DMARC Record.jpg}
+\end{figure}
 
 \subsection{Phase 6: DNSSEC Implementation}
 
@@ -481,13 +532,18 @@ dnssec-keygen -a RSASHA256 -b 2048 -n ZONE example.com
 dnssec-keygen -f KSK -a RSASHA256 -b 4096 -n ZONE example.com
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 36 - DNSSEC key generation]
-
 Keys generated:
 \begin{itemize}
     \item Kexample.com.+008+34576 (ZSK - 2048-bit)
     \item Kexample.com.+008+04856 (KSK - 4096-bit)
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.5\textheight]{image/36: Generate DNSSEC Keys.jpg}
+\end{figure}
+
+
 
 \subsubsection{Zone Signing}
 
@@ -498,7 +554,10 @@ dnssec-signzone -A -3 $(head -c 1000 /dev/random | sha1sum | cut -b 1-16) \
                 -N INCREMENT -o example.com -t db.example.com
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 37 - Zone signing output]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.2\textheight]{image/37: Sign the Zone.jpg}
+\end{figure}
 
 \textbf{Signing Results:}
 \begin{itemize}
@@ -523,14 +582,20 @@ zone "example.com" {
 };
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 38 - Updated BIND configuration]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.2\textheight]{image/38: Update BIND to Use Signed Zone.jpg}
+\end{figure}
 
 \textbf{DNS Reload:}
 \begin{lstlisting}[language=bash]
 kill -HUP $(cat /var/run/named/named.pid)
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 39 - BIND reload with DNSSEC]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.3\textheight]{image/39: Reload DNS with DNSSEC.jpg}
+\end{figure}
 
 \subsubsection{DNSSEC Validation}
 
@@ -538,7 +603,10 @@ kill -HUP $(cat /var/run/named/named.pid)
 dig @172.20.0.10 example.com +dnssec
 \end{lstlisting}
 
-\textbf{Screenshot Reference}: [Step 40 - DNSSEC validation with RRSIG records]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth, height=0.5\textheight]{image/40: Verify DNSSEC.jpg}
+\end{figure}
 
 The response included RRSIG records proving cryptographic authentication of DNS data.
 
@@ -748,82 +816,7 @@ Message Tampering & Undetectable & Detected (DKIM) \\
     \item Minimal impact on throughput for typical mail servers
 \end{itemize}
 
-%==============================================================================
-\section{Security Recommendations}
-%==============================================================================
-
-\subsection{Best Practices for Email Security}
-
-\begin{enumerate}
-    \item \textbf{Implement All Three Mechanisms}: SPF, DKIM, and DMARC work together to provide comprehensive protection
-    \item \textbf{Start with Monitoring}: Use DMARC p=none initially to gather data before enforcing policies
-    \item \textbf{Gradual Policy Enforcement}: Progress from p=none → p=quarantine → p=reject
-    \item \textbf{Monitor Aggregate Reports}: Analyze DMARC reports to identify legitimate sources
-    \item \textbf{Key Rotation}: Rotate DKIM keys periodically (recommended: annually)
-    \item \textbf{Multiple DKIM Selectors}: Use different keys for different mail streams
-    \item \textbf{Publish DKIM Keys Separately}: Use dedicated subdomains for organizational keys
-\end{enumerate}
-
-\subsection{DNSSEC Deployment Considerations}
-
-\begin{enumerate}
-    \item \textbf{Key Management}: Implement secure key generation and storage procedures
-    \item \textbf{Automated Re-signing}: Zone signatures expire and must be refreshed
-    \item \textbf{ZSK Rollover}: Plan for periodic ZSK replacement (recommended: quarterly)
-    \item \textbf{KSK Rollover}: Less frequent but more complex (recommended: annually)
-    \item \textbf{Monitoring}: Alert on signature expiration and validation failures
-    \item \textbf{Parent Zone Coordination}: DS records must be published in parent zone
-\end{enumerate}
-
-\subsection{Operational Security}
-
-\begin{enumerate}
-    \item \textbf{Regular Updates}: Keep DNS and mail server software patched
-    \item \textbf{Access Control}: Restrict access to DKIM private keys and DNSSEC keys
-    \item \textbf{Log Monitoring}: Review authentication failures for attack patterns
-    \item \textbf{Backup Keys}: Maintain secure offline backups of cryptographic keys
-    \item \textbf{Incident Response}: Develop procedures for key compromise scenarios
-\end{enumerate}
-
-%==============================================================================
-\section{Lessons Learned}
-%==============================================================================
-
-\subsection{Technical Insights}
-
-\begin{itemize}
-    \item Email and DNS protocols lack inherent security and require additional layers
-    \item Cryptographic authentication significantly increases attack complexity
-    \item Defense in depth is essential - no single mechanism is sufficient
-    \item Configuration errors can completely undermine security controls
-    \item Testing and validation are critical to ensure proper implementation
-\end{itemize}
-
-\subsection{Challenges Encountered}
-
-\begin{enumerate}
-    \item \textbf{DKIM Configuration}: Initial Postfix configuration had issues with localhost resolution, resolved by using 127.0.0.1 instead
-    
-    \item \textbf{DNSSEC Zone Signing}: Required adding DNSKEY records to zone file before signing would succeed
-    
-    \item \textbf{Volume Mounting}: Docker volume mounts initially overwrote configuration files, resolved by proper Dockerfile modification
-    
-    \item \textbf{User Creation}: Mail delivery required proper user account and mailbox creation
-    
-    \item \textbf{DNS Spoofing}: Attack required fake DNS server implementation rather than simple packet injection
-\end{enumerate}
-
-\subsection{Skills Developed}
-
-\begin{itemize}
-    \item Docker containerization and networking
-    \item DNS server configuration (BIND9)
-    \item Mail server setup (Postfix + OpenDKIM)
-    \item Cryptographic key management
-    \item Email authentication protocols
-    \item Attack simulation and testing methodologies
-    \item Network traffic analysis
-\end{itemize}
+%
 
 %==============================================================================
 \section{Conclusion}
@@ -888,9 +881,9 @@ This laboratory provided hands-on experience with critical Internet security pro
 
 The combination of SPF, DKIM, DMARC, and DNSSEC represents current best practices for email and DNS security, but continuous vigilance and adaptation to emerging threats remain necessary as attack techniques evolve.
 
-%==============================================================================
+\newpage
+
 \section{References}
-%==============================================================================
 
 \begin{enumerate}
     \item RFC 7208 - Sender Policy Framework (SPF) for Authorizing Use of Domains in Email
@@ -905,113 +898,5 @@ The combination of SPF, DKIM, DMARC, and DNSSEC represents current best practice
     \item DNSSEC Deployment Guide - ICANN
 \end{enumerate}
 
-%==============================================================================
-\appendix
-\section{Screenshot Index}
-%==============================================================================
-
-\subsection{Setup and Verification}
-\begin{itemize}
-    \item Screenshot 1: Container deployment (Step 1)
-    \item Screenshot 2: All containers running (Step 2)
-    \item Screenshot 3: DKIM key generation (Step 3)
-\end{itemize}
-
-\subsection{DNS Testing}
-\begin{itemize}
-    \item Screenshot 4: DNS A record query (Step 4)
-    \item Screenshot 5: DNS MX record query (Step 5)
-    \item Screenshot 6: DNS NS record query (Step 6)
-    \item Screenshot 7: nslookup verification (Step 7)
-\end{itemize}
-
-\subsection{Baseline Email Testing}
-\begin{itemize}
-    \item Screenshot 8: First successful email (Step 8)
-    \item Screenshot 9: Mail server delivery logs (Step 9)
-\end{itemize}
-
-\subsection{Attack Demonstrations}
-\begin{itemize}
-    \item Screenshot 10: Email header forgery accepted (Step 10)
-    \item Screenshot 11: Forged email in mailbox (Step 11)
-    \item Screenshot 12: Email headers showing forgery (Step 12)
-    \item Screenshot 13: Fake mail server running (Step 13)
-    \item Screenshot 14: DNS spoofing attack active (Step 14)
-    \item Screenshot 15: Intercepted email on fake server (Step 15)
-    \item Screenshot 16: DNS query during attack (Step 16)
-\end{itemize}
-
-\subsection{SPF Implementation}
-\begin{itemize}
-    \item Screenshot 17: SPF record added to DNS (Step 17)
-    \item Screenshot 18: DNS reload success (Step 18)
-    \item Screenshot 19: SPF TXT record verification (Step 19)
-\end{itemize}
-
-\subsection{DKIM Implementation}
-\begin{itemize}
-    \item Screenshot 20: DKIM public key display (Step 20)
-    \item Screenshot 21: DKIM record in DNS (Step 21)
-    \item Screenshot 22: DKIM DNS verification (Step 22)
-    \item Screenshot 23: Postfix DKIM configuration (Step 23)
-    \item Screenshot 24: Postfix reload (Step 24)
-    \item Screenshot 25: DKIM record query (Step 25)
-    \item Screenshot 26: Email with DKIM signature (Step 26)
-    \item Screenshot 27: DKIM in logs (Step 27)
-\end{itemize}
-
-\subsection{DMARC Implementation}
-\begin{itemize}
-    \item Screenshot 28: DMARC record added (Step 28)
-    \item Screenshot 29: DNS reload for DMARC (Step 29)
-    \item Screenshot 30: DMARC TXT record query (Step 30)
-\end{itemize}
-
-\subsection{Security Verification}
-\begin{itemize}
-    \item Screenshot 31: Retry forgery with security (Step 31)
-    \item Screenshot 32: External domain test (Step 32)
-    \item Screenshot 33: All security records (Step 33)
-\end{itemize}
-
-\subsection{Traffic Analysis}
-\begin{itemize}
-    \item Screenshot 34: DNS traffic capture (Step 34)
-    \item Screenshot 35: SMTP traffic with DKIM (Step 35)
-\end{itemize}
-
-\subsection{DNSSEC Implementation}
-\begin{itemize}
-    \item Screenshot 36: DNSSEC key generation (Step 36)
-    \item Screenshot 37: Zone signing output (Step 37)
-    \item Screenshot 38: BIND configuration update (Step 38)
-    \item Screenshot 39: DNS reload with DNSSEC (Step 39)
-    \item Screenshot 40: DNSSEC validation (Step 40)
-\end{itemize}
-
-\subsection{Final Testing}
-\begin{itemize}
-    \item Screenshot 41: Container logs review (Step 41)
-    \item Screenshot 42: Final verified email (Step 42)
-\end{itemize}
-
-%==============================================================================
-\section{Configuration Files}
-%==============================================================================
-
-\subsection{Docker Compose Configuration}
-Complete docker-compose.yml defining the lab topology with four containers and isolated network.
-
-\subsection{DNS Zone File}
-Final signed zone file (db.example.com.signed) with SPF, DKIM, DMARC, and DNSSEC records.
-
-\subsection{Postfix Configuration}
-Main.cf and master.cf files with DKIM milter integration.
-
-\subsection{OpenDKIM Configuration}
-Configuration files for DKIM signing including key paths and trusted hosts.
-
-\textit{Note: Full configuration files are included in the source code submission.}
-
 \end{document}
+
