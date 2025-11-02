@@ -1,0 +1,30 @@
+# Basic Postfix configuration
+myhostname = mail.example.com
+mydomain = example.com
+myorigin = $mydomain
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+relayhost = 
+mynetworks = 172.20.0.0/16, 127.0.0.0/8
+mailbox_size_limit = 0
+recipient_delimiter = +
+inet_interfaces = all
+inet_protocols = ipv4
+
+# SMTP settings
+smtpd_banner = $myhostname ESMTP
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+
+# TLS parameters (basic)
+smtpd_use_tls = no
+smtp_use_tls = no
+
+# Basic restrictions (insecure initially)
+smtpd_recipient_restrictions = permit_mynetworks, reject_unauth_destination
+
+# DKIM/OpenDKIM integration (enabled)
+milter_default_action = accept
+milter_protocol = 2
+smtpd_milters = inet:127.0.0.1:8891
+non_smtpd_milters = inet:127.0.0.1:8891

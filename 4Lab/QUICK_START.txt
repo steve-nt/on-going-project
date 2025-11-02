@@ -1,0 +1,100 @@
+================================================================================
+QUICK START GUIDE - Lab 4: Secure E-Mail and DNS
+================================================================================
+
+BEFORE YOU BEGIN:
+-----------------
+1. Install Docker:
+   sudo apt-get update
+   sudo apt-get install docker.io docker-compose-plugin
+   sudo usermod -aG docker $USER
+   
+2. Log out and back in, or run: newgrp docker
+
+
+QUICK COMMANDS:
+---------------
+
+# 1. START THE LAB
+cd /home/steven/Desktop/4Lab
+docker compose up -d --build
+
+# 2. CHECK STATUS
+docker compose ps
+
+# 3. VIEW LOGS
+docker compose logs -f
+
+# 4. TEST DNS (from client)
+docker exec -it client dig @172.20.0.10 mail.example.com
+docker exec -it client dig @172.20.0.10 example.com MX
+
+# 5. SEND TEST EMAIL
+docker exec -it client swaks --to user@example.com --from test@client.example.com --server mail.example.com
+
+# 6. ACCESS CONTAINERS
+docker exec -it client bash          # Client shell
+docker exec -it attacker bash        # Attacker shell
+docker exec -it mail-server bash     # Mail server shell
+docker exec -it dns-server bash      # DNS server shell
+
+# 7. STOP THE LAB
+docker compose down
+
+# 8. RESET EVERYTHING
+docker compose down -v
+
+
+USING THE HELPER SCRIPT:
+------------------------
+./lab.sh start              # Start lab
+./lab.sh test-dns           # Test DNS
+./lab.sh test-mail          # Send test email
+./lab.sh show-dkim          # Show DKIM key
+./lab.sh shell-client       # Access client
+./lab.sh stop               # Stop lab
+
+
+KEY IP ADDRESSES:
+-----------------
+DNS Server:    172.20.0.10
+Mail Server:   172.20.0.20
+Client:        172.20.0.30
+Attacker:      172.20.0.40
+
+
+IMPORTANT FILES:
+----------------
+LAB_STEPS.txt              # Complete detailed steps with all commands
+README.md                  # Full documentation
+docker-compose.yml         # Container orchestration
+lab.sh                     # Helper script
+dns-server/db.example.com  # DNS zone file (edit for SPF/DKIM/DMARC)
+mail-server/main.cf        # Postfix config (edit for DKIM)
+
+
+MAIN LAB PHASES:
+----------------
+Phase 1: Basic Setup (Steps 1-9)
+  - Start containers, verify DNS, send first email
+
+Phase 2: Vulnerability Demo (Steps 10-16)
+  - Email forgery, DNS spoofing attack
+
+Phase 3: Enable SPF (Steps 17-19)
+  - Add SPF record to DNS
+
+Phase 4: Enable DKIM (Steps 20-27)
+  - Configure DKIM signing on mail server
+
+Phase 5: Enable DMARC (Steps 28-30)
+  - Add DMARC policy to DNS
+
+Phase 6: Testing & Verification (Steps 31-35)
+  - Test security improvements, capture traffic
+
+Phase 7: DNSSEC (Optional, Steps 36-40)
+  - Sign DNS zone with DNSSEC
+
+
+For detailed step-by-step instructions, see LAB_STEPS.txt

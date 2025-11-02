@@ -1,0 +1,806 @@
+================================================================================
+LAB 4: SECURE E-MAIL AND DNS - STEP-BY-STEP GUIDE
+================================================================================
+
+PREREQUISITES:
+--------------
+Docker and Docker Compose must be installed on your system.
+
+To install Docker on Ubuntu/Debian:
+  sudo apt-get update
+  sudo apt-get install docker.io docker-compose-plugin
+  sudo systemctl start docker
+  sudo systemctl enable docker
+  sudo usermod -aG docker $USER
+  
+Then log out and log back in, or run:
+  newgrp docker
+
+
+================================================================================
+PART 1: INITIAL SETUP AND VERIFICATION
+================================================================================
+
+Step 1: Build and Start the Lab Environment
+--------------------------------------------
+Command:
+  cd /home/steven/Desktop/4Lab
+  docker compose up -d --build
+
+Expected Output:
+  - Building images for dns-server, mail-server, client, and attacker
+  - Creating network 4lab_labnet
+  - Starting containers
+
+Screenshot: Take screenshot showing all containers running
+
+
+Step 2: Verify Containers Are Running
+-------------------------------------
+Command:
+  docker compose ps
+
+Expected Output:
+  NAME           IMAGE              STATUS         PORTS
+  dns-server     ...                Up             53/tcp, 53/udp
+  mail-server    ...                Up             25/tcp, 587/tcp, 993/tcp
+  client         ...                Up
+  attacker       ...                Up
+
+Screenshot: Capture this output
+
+
+Step 3: Check Container Logs
+----------------------------
+Command:
+  docker compose logs mail-server | grep -i "dkim"
+
+Expected Output:
+  - DKIM key generation message
+  - Display of DKIM public key
+
+Screenshot: Capture the DKIM key generation
+
+
+================================================================================
+PART 2: BASIC DNS AND EMAIL TESTING
+================================================================================
+
+Step 4: Test DNS Resolution from Client
+---------------------------------------
+Command:
+  docker exec -it client bash
+  
+Inside client container:
+  dig @172.20.0.10 mail.example.com
+  
+Expected Output:
+  - Answer section showing: mail.example.com. 172.20.0.20
+  - Query time
+  - Server: 172.20.0.10
+
+Screenshot: Capture the dig output showing A record
+
+
+Step 5: Test MX Record Resolution
+---------------------------------
+Command (inside client container):
+  dig @172.20.0.10 example.com MX
+
+Expected Output:
+  - Answer section showing: example.com. IN MX 10 mail.example.com.
+
+Screenshot: Capture MX record query
+
+
+Step 6: Test Name Server Resolution
+-----------------------------------
+Command (inside client container):
+  dig @172.20.0.10 example.com NS
+
+Expected Output:
+  - Answer section showing: example.com. IN NS dns.example.com.
+
+Screenshot: Capture NS record query
+
+
+Step 7: Verify Mail Server DNS from Client
+------------------------------------------
+Command (inside client container):
+  nslookup mail.example.com 172.20.0.10
+
+Expected Output:
+  - Server: 172.20.0.10
+  - Name: mail.example.com
+  - Address: 172.20.0.20
+
+Screenshot: Capture nslookup output
+
+
+Step 8: Send First Test Email
+-----------------------------
+Command (inside client container):
+  swaks --to user@example.com \
+        --from testuser@client.example.com \
+        --server mail.example.com \
+        --header "Subject: Test Email 1" \
+        --body "This is a test email from the client."
+
+Expected Output:
+  - "250 2.0.0 Ok: queued as [MESSAGE_ID]"
+  - Message accepted
+
+Screenshot: Capture successful email delivery
+
+
+Step 9: Verify Email in Mail Server Logs
+----------------------------------------
+Command (in new terminal):
+  docker exec -it mail-server tail -n 50 /var/log/mail.log
+
+Expected Output:
+  - postfix/smtp entry showing message queued
+  - Message delivery status
+
+Screenshot: Capture mail log entries
+
+Exit client container:
+  exit
+
+
+================================================================================
+PART 3: INSECURE EMAIL DEMONSTRATION (BEFORE SECURITY)
+================================================================================
+
+Step 10: Test Email Header Forgery
+----------------------------------
+Command:
+  docker exec -it client bash
+
+Inside client:
+  swaks --to victim@example.com \
+        --from ceo@example.com \
+        --header "From: CEO <ceo@example.com>" \
+        --header "Subject: URGENT: Wire Transfer Required" \
+        --body "Please wire $50,000 to account 123456 immediately." \
+        --server mail.example.com
+
+Expected Output:
+  - Email is ACCEPTED (this demonstrates the vulnerability!)
+  - "250 2.0.0 Ok: queued"
+
+Screenshot: Capture the forged email being accepted
+
+
+Step 11: Verify Forged Email in Logs
+------------------------------------
+Command (new terminal):
+  docker exec -it mail-server tail -n 30 /var/log/mail.log | grep "ceo@example.com"
+
+Expected Output:
+  - Log entries showing forged email was processed
+
+Screenshot: Capture log showing forged sender
+
+
+Step 12: Test Anonymous Email
+-----------------------------
+Command (inside client):
+  swaks --to user@example.com \
+        --from "Anonymous Hacker <hacker@evil.com>" \
+        --server mail.example.com \
+        --header "Subject: You've been hacked!" \
+        --body "This is from an external domain but still accepted!"
+
+Expected Output:
+  - Email accepted (shows lack of SPF validation)
+
+Screenshot: Capture acceptance of external domain email
+
+Exit client:
+  exit
+
+
+================================================================================
+PART 4: DNS SPOOFING ATTACK DEMONSTRATION
+================================================================================
+
+Step 13: Start Fake Mail Server on Attacker
+-------------------------------------------
+Command (Terminal 1):
+  docker exec -it attacker bash
+
+Inside attacker:
+  python3 /root/fake_mail_server.py
+
+Expected Output:
+  - "[*] Fake SMTP server listening on 0.0.0.0:25"
+  - "[*] Waiting for connections..."
+
+Screenshot: Capture fake server running
+
+LEAVE THIS TERMINAL RUNNING!
+
+
+Step 14: Start DNS Spoofing Attack
+----------------------------------
+Command (Terminal 2):
+  docker exec -it attacker bash
+
+Inside attacker:
+  python3 /root/dns_spoof.py
+
+Expected Output:
+  - "[*] Starting DNS Spoofer..."
+  - "[*] Target domain: mail.example.com"
+  - "[*] Fake IP: 172.20.0.40"
+  - "[*] Sniffing DNS queries..."
+
+Screenshot: Capture DNS spoofer running
+
+LEAVE THIS TERMINAL RUNNING!
+
+
+Step 15: Send Email During Attack
+---------------------------------
+Command (Terminal 3):
+  docker exec -it client bash
+
+Inside client:
+  # First clear DNS cache
+  echo "nameserver 172.20.0.10" > /etc/resolv.conf
+  
+  # Send email
+  swaks --to user@example.com \
+        --from client@example.com \
+        --server mail.example.com \
+        --header "Subject: This should be intercepted" \
+        --body "If the attack works, this goes to the fake server"
+
+Expected Output:
+  - Check Terminal 1 (fake mail server) - should show intercepted email!
+  - Check Terminal 2 (DNS spoofer) - should show spoofed DNS response
+
+Screenshot: Capture intercepted email in fake server terminal
+
+
+Step 16: Verify DNS Spoofing
+----------------------------
+Command (inside client):
+  dig @172.20.0.10 mail.example.com
+
+Expected Output:
+  - If attack is successful, may show 172.20.0.40 (attacker IP)
+  - Otherwise shows 172.20.0.20 (legitimate mail server)
+
+  dig example.com
+  dig example.com MX
+
+Screenshot: Capture DNS query result during attack
+
+Stop the attack (Ctrl+C in Terminal 1 and Terminal 2)
+Exit client (Terminal 3)
+
+
+================================================================================
+PART 5: ENABLING SECURITY - SPF RECORDS
+================================================================================
+
+Step 17: Add SPF Record to DNS
+------------------------------
+Command:
+  docker exec -it dns-server bash
+
+Inside dns-server:
+  # Edit the zone file
+  vi /etc/bind/zones/db.example.com
+
+Changes to make:
+  1. Find the line: ; @       IN      TXT     "v=spf1 ip4:172.20.0.20 -all"
+  2. Remove the semicolon (;) to uncomment it
+  3. Increment the serial number (e.g., 2023110201 -> 2023110202)
+  4. Save and exit (:wq)
+
+Screenshot: Capture the edited zone file showing SPF record
+You should see the SPF record "v=spf1 ip4:172.20.0.20 -all" in the answer
+   section. This SPF record states that only the mail server at 172.20.0.20 is
+   authorized to send email for the example.com domain.
+
+Step 18: Reload DNS Server
+--------------------------
+Command (inside dns-server):
+  rndc reload
+
+Expected Output:
+  - server reload successful
+
+Screenshot: Capture reload success message
+
+
+Step 19: Verify SPF Record
+--------------------------
+Command:
+  docker exec -it client bash
+
+Inside client:
+  dig @172.20.0.10 example.com TXT
+
+Expected Output:
+  - Answer section showing: "v=spf1 ip4:172.20.0.20 -all"
+
+Screenshot: Capture SPF TXT record query
+
+Exit dns-server and client
+You should see the SPF record "v=spf1 ip4:172.20.0.20 -all" in the answer
+   section. This SPF record states that only the mail server at 172.20.0.20 is
+   authorized to send email for the example.com domain.
+
+
+================================================================================
+PART 6: ENABLING SECURITY - DKIM SIGNING
+================================================================================
+
+Step 20: Get DKIM Public Key
+----------------------------
+Command:
+  docker exec -it mail-server cat /etc/opendkim/keys/example.com/default.txt
+
+Expected Output:
+  - default._domainkey IN TXT ( "v=DKIM1; k=rsa; p=MIIBIj..." )
+
+Screenshot: Capture DKIM public key
+
+COPY THIS KEY - you'll need it for the next step!
+default._domainkey      IN      TXT     ( "v=DKIM1; h=sha256; k=rsa; "
+          "p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAh7Td7VIuQwb7tkA9hNzgrvt43iwCwHp+6eoWAEbW2KlBJPTxhH10c8BbB32Uz/zofcezgaimrTyW/GUf2So6DyumVlEJwjubtZifsEjwu22lAbdrWh5pEvigk9VWkzguq2PVF4jCggyFYCkWTKuljmjn/g17oCkXyWIkZ8Ew3+QC21IUhoPENwfobtC/fQZMd5xgWe3yJupxp+"
+          "Wna5S/iMD4wdXjf24aYpoY53nR9fCAPXwgYwnRs5OFIfK7wnkd0SIyaEPjqob1nMZQTQMUlX7FdznxyDEFqvXCg//csVyp1xD+AmGLOn8A75QU9K6Re0xUEbK+Ubd25nU3EUizzQIDAQAB" )  ; ----- DKIM key default for example.com
+
+
+Step 21: Add DKIM Record to DNS
+-------------------------------
+Command:
+  docker exec -it dns-server bash
+
+Inside dns-server:
+  vi /etc/bind/zones/db.example.com
+
+Changes to make:
+  1. Find: ; default._domainkey  IN  TXT  "v=DKIM1; k=rsa; p=YOUR_PUBLIC_KEY"
+  2. Remove the semicolon
+  3. Replace YOUR_PUBLIC_KEY with the actual key from Step 20
+  4. Increment serial number again (e.g., 2023110202 -> 2023110203)
+  5. Save and exit
+
+Example:
+  default._domainkey  IN  TXT  "v=DKIM1; k=rsa; p=MIIBIjANBgkq..."
+
+Screenshot: Capture zone file with DKIM record
+
+
+Step 22: Reload DNS Again
+-------------------------
+Command (inside dns-server):
+  rndc reload
+
+Expected Output:
+  - server reload successful
+
+Exit dns-server
+
+
+Step 23: Enable DKIM in Postfix
+-------------------------------
+Command:
+  docker exec -it mail-server bash
+
+Inside mail-server:
+  vi /etc/postfix/main.cf
+
+Changes to make:
+  Find these lines at the bottom:
+    # milter_default_action = accept
+    # milter_protocol = 2
+    # smtpd_milters = inet:localhost:8891
+    # non_smtpd_milters = inet:localhost:8891
+  
+  Remove ALL the # symbols to uncomment them
+
+Screenshot: Capture uncommented milter configuration
+
+
+Step 24: Restart Postfix and OpenDKIM
+-------------------------------------
+Command (inside mail-server):
+  service opendkim restart
+  service postfix restart
+
+Expected Output:
+  - Both services restart successfully
+
+Screenshot: Capture restart messages
+
+Exit mail-server
+
+
+Step 25: Verify DKIM Record in DNS
+----------------------------------
+Command:
+  docker exec -it client bash
+
+Inside client:
+  dig @172.20.0.10 default._domainkey.example.com TXT
+
+Expected Output:
+  - TXT record with DKIM public key
+
+Screenshot: Capture DKIM TXT record query
+
+Exit client
+
+
+Step 26: Send Email with DKIM Signature
+---------------------------------------
+Command:
+  docker exec -it client bash
+
+Inside client:
+  swaks --to user@example.com \
+        --from sender@example.com \
+        --server mail.example.com \
+        --header "Subject: DKIM Signed Email" \
+        --body "This email should be DKIM signed"
+
+Expected Output:
+  - Email accepted
+
+Screenshot: Capture email send
+
+
+Step 27: Verify DKIM Signature in Logs
+--------------------------------------
+Command:
+  docker exec -it mail-server tail -n 50 /var/log/mail.log | grep -i dkim
+
+Expected Output:
+  - Log entries showing DKIM signing activity
+
+Screenshot: Capture DKIM signing in logs
+
+
+================================================================================
+PART 7: ENABLING SECURITY - DMARC POLICY
+================================================================================
+
+Step 28: Add DMARC Record to DNS
+--------------------------------
+Command:
+  docker exec -it dns-server bash
+
+Inside dns-server:
+  vi /etc/bind/zones/db.example.com
+
+Changes to make:
+  1. Find: ; _dmarc  IN      TXT     "v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com"
+  2. Remove the semicolon
+  3. Increment serial number (e.g., 2023110203 -> 2023110204)
+  4. Save and exit
+
+Screenshot: Capture zone file with DMARC record
+
+
+Step 29: Reload DNS for DMARC
+-----------------------------
+Command (inside dns-server):
+  rndc reload
+
+Exit dns-server
+
+
+Step 30: Verify DMARC Record
+----------------------------
+Command:
+  docker exec -it client bash
+
+Inside client:
+  dig @172.20.0.10 _dmarc.example.com TXT
+
+Expected Output:
+  - TXT record showing DMARC policy
+
+Screenshot: Capture DMARC TXT record query
+
+Exit client
+
+
+================================================================================
+PART 8: TESTING SECURITY IMPROVEMENTS
+================================================================================
+
+Step 31: Retry Email Forgery (Should Be Harder)
+-----------------------------------------------
+Command:
+  docker exec -it client bash
+
+Inside client:
+  swaks --to victim@example.com \
+        --from ceo@example.com \
+        --header "From: CEO <ceo@example.com>" \
+        --server mail.example.com \
+        --header "Subject: URGENT: Wire Transfer" \
+        --body "This should now be flagged/rejected"
+
+Expected Output:
+  - Email may still be accepted BUT will have DKIM/SPF failures in headers
+
+Screenshot: Capture the attempt
+
+
+Step 32: Check if External Domain is Rejected
+---------------------------------------------
+Command (inside client):
+  swaks --to user@example.com \
+        --from attacker@evil.com \
+        --server mail.example.com \
+        --header "Subject: External Attack"
+
+Expected Output:
+  - With SPF checking, this should fail or be flagged
+
+Screenshot: Capture result
+
+Exit client
+
+
+Step 33: Verify All Security Records
+------------------------------------
+Command:
+  docker exec -it client bash
+
+Inside client:
+  echo "=== MX Record ==="
+  dig @172.20.0.10 example.com MX +short
+  
+  echo "=== SPF Record ==="
+  dig @172.20.0.10 example.com TXT +short
+  
+  echo "=== DKIM Record ==="
+  dig @172.20.0.10 default._domainkey.example.com TXT +short
+  
+  echo "=== DMARC Record ==="
+  dig @172.20.0.10 _dmarc.example.com TXT +short
+
+Screenshot: Capture all DNS security records together
+
+Exit client
+
+
+================================================================================
+PART 9: TRAFFIC ANALYSIS
+================================================================================
+
+Step 34: Capture DNS Traffic
+----------------------------
+Command (Terminal 1):
+  docker exec -it client bash
+
+Inside client:
+  tcpdump -i any port 53 -n -v
+
+LEAVE RUNNING
+
+
+Command (Terminal 2):
+  docker exec -it client bash
+
+Inside client:
+  dig @172.20.0.10 mail.example.com
+
+Expected Output (Terminal 1):
+  - DNS query and response packets captured
+
+Screenshot: Capture tcpdump showing DNS traffic
+
+Stop tcpdump (Ctrl+C in Terminal 1)
+
+
+Step 35: Capture SMTP Traffic
+-----------------------------
+Command (Terminal 1 - inside client):
+  tcpdump -i any port 25 -n -A
+
+LEAVE RUNNING
+
+
+Command (Terminal 2 - inside client):
+  swaks --to user@example.com --from test@example.com --server mail.example.com
+
+Expected Output (Terminal 1):
+  - SMTP conversation captured including DKIM headers
+
+Screenshot: Capture tcpdump showing SMTP traffic with DKIM
+
+Stop tcpdump (Ctrl+C)
+Exit both client containers
+
+
+================================================================================
+PART 10: ADVANCED - DNSSEC (OPTIONAL)
+================================================================================
+
+Step 36: Generate DNSSEC Keys
+-----------------------------
+Command:
+  docker exec -it dns-server bash
+
+Inside dns-server:
+  cd /etc/bind/zones
+  
+  # Generate Zone Signing Key (ZSK)
+  dnssec-keygen -a RSASHA256 -b 2048 -n ZONE example.com
+  
+  # Generate Key Signing Key (KSK)
+  dnssec-keygen -f KSK -a RSASHA256 -b 4096 -n ZONE example.com
+
+Expected Output:
+  - Kexample.com.+008+XXXXX (ZSK files)
+  - Kexample.com.+008+YYYYY (KSK files)
+
+Screenshot: Capture key generation output
+
+
+Step 37: Sign the Zone
+----------------------
+Command (inside dns-server, in /etc/bind/zones):
+  dnssec-signzone -A -3 $(head -c 1000 /dev/random | sha1sum | cut -b 1-16) \
+                  -N INCREMENT -o example.com -t db.example.com
+
+Expected Output:
+  - db.example.com.signed created
+  - Zone signing complete
+
+Screenshot: Capture zone signing output
+
+
+Step 38: Update BIND to Use Signed Zone
+---------------------------------------
+Command (inside dns-server):
+  vi /etc/bind/named.conf.local
+
+Changes:
+  Change:
+    file "/etc/bind/zones/db.example.com";
+  To:
+    file "/etc/bind/zones/db.example.com.signed";
+
+Screenshot: Capture updated configuration
+
+
+Step 39: Reload DNS with DNSSEC
+-------------------------------
+Command (inside dns-server):
+  rndc reload
+
+Expected Output:
+  - server reload successful
+
+Exit dns-server
+
+
+Step 40: Verify DNSSEC
+----------------------
+Command:
+  docker exec -it client bash
+
+Inside client:
+  dig @172.20.0.10 example.com +dnssec
+
+Expected Output:
+  - RRSIG records in answer section
+  - ad flag in header
+
+Screenshot: Capture DNSSEC validation
+
+Exit client
+
+
+================================================================================
+PART 11: FINAL VERIFICATION AND CLEANUP
+================================================================================
+
+Step 41: Review All Container Logs
+----------------------------------
+Command:
+  docker compose logs --tail=100 dns-server
+  docker compose logs --tail=100 mail-server
+
+Screenshot: Capture any interesting log entries
+
+
+Step 42: Test Complete Email Flow
+---------------------------------
+Command:
+  docker exec -it client swaks \
+    --to final@example.com \
+    --from verified@example.com \
+    --server mail.example.com \
+    --header "Subject: Final Verified Email" \
+    --body "This email has SPF, DKIM, and DMARC protection"
+
+Screenshot: Capture final successful email
+
+
+Step 43: Generate Summary Report
+--------------------------------
+Create a text file documenting:
+  - Initial insecure state (email forgery worked)
+  - DNS spoofing attack success
+  - SPF record added and verified
+  - DKIM signing enabled and verified
+  - DMARC policy configured
+  - Security improvements (forgery harder/detected)
+  - DNSSEC enabled (optional)
+
+
+Step 44: Stop the Lab (When Done)
+---------------------------------
+Command:
+  cd /home/steven/Desktop/4Lab
+  docker compose down
+
+To completely clean up including volumes:
+  docker compose down -v
+
+
+================================================================================
+TROUBLESHOOTING TIPS
+================================================================================
+
+If DNS server won't start:
+  docker exec -it dns-server named-checkconf
+  docker exec -it dns-server named-checkzone example.com /etc/bind/zones/db.example.com
+
+If mail server has issues:
+  docker exec -it mail-server postfix check
+  docker exec -it mail-server postfix status
+  docker logs mail-server
+
+If containers can't communicate:
+  docker network inspect 4lab_labnet
+  docker exec -it client ping 172.20.0.10
+  docker exec -it client ping 172.20.0.20
+
+If you need to rebuild:
+  docker compose down
+  docker compose build --no-cache
+  docker compose up -d
+
+
+================================================================================
+SCREENSHOTS CHECKLIST
+================================================================================
+
+Essential Screenshots to Take:
+ [ ] All containers running (docker compose ps)
+ [ ] DKIM key generation
+ [ ] DNS A record query
+ [ ] DNS MX record query  
+ [ ] First successful email
+ [ ] Email header forgery accepted (insecure)
+ [ ] Fake mail server running
+ [ ] DNS spoofing attack running
+ [ ] Intercepted email on fake server
+ [ ] SPF record in DNS
+ [ ] DKIM public key
+ [ ] DKIM record in DNS
+ [ ] DMARC record in DNS
+ [ ] All security records together
+ [ ] Email with DKIM signature
+ [ ] DNS traffic capture
+ [ ] SMTP traffic capture with DKIM
+ [ ] DNSSEC verification (optional)
+ [ ] Final verified email
+
+
+================================================================================
+END OF LAB STEPS
+================================================================================

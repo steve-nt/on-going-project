@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  dns-server:
+    build: ./dns-server
+    container_name: dns-server
+    hostname: dns.example.com
+    networks:
+      labnet:
+        ipv4_address: 172.20.0.10
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    volumes:
+      - ./dns-server/config:/etc/bind
+      - ./dns-server/zones:/var/lib/bind
+    cap_add:
+      - NET_ADMIN
+
+  mail-server:
+    build: ./mail-server
+    container_name: mail-server
+    hostname: mail.example.com
+    networks:
+      labnet:
+        ipv4_address: 172.20.0.20
+    ports:
+      - "25:25"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - ./mail-server/config:/etc/postfix
+      - ./mail-server/opendkim:/etc/opendkim
+      - maildata:/var/mail
+    depends_on:
+      - dns-server
+    dns:
+      - 172.20.0.10
+
+  client:
+    build: ./client
+    container_name: client
+    hostname: client.example.com
+    networks:
+      labnet:
+        ipv4_address: 172.20.0.30
+    depends_on:
+      - dns-server
+      - mail-server
+    dns:
+      - 172.20.0.10
+    tty: true
+    stdin_open: true
+
+  attacker:
+    build: ./attacker
+    container_name: attacker
+    hostname: attacker.local
+    networks:
+      labnet:
+        ipv4_address: 172.20.0.40
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    tty: true
+    stdin_open: true
+
+networks:
+  labnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  maildata:

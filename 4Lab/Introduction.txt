@@ -1,0 +1,141 @@
+================================================================================
+LAB 4: SECURE E-MAIL AND DNS - INTRODUCTION
+================================================================================
+
+BACKGROUND
+----------
+
+Email communication has been a cornerstone of digital interaction for decades, yet 
+the foundational protocols upon which it is built—SMTP (Simple Mail Transfer 
+Protocol) and DNS (Domain Name System)—were designed in an era when security was 
+not a primary concern. These protocols operate on trust assumptions that are no 
+longer valid in today's threat landscape. Attackers routinely exploit these 
+weaknesses through DNS spoofing attacks, email header forgery, and phishing 
+campaigns that leverage the lack of sender authentication.
+
+The consequences of these vulnerabilities are severe: business email compromise 
+(BEC) attacks cost organizations billions of dollars annually, phishing emails 
+remain the primary vector for malware delivery and credential theft, and DNS 
+manipulation enables sophisticated man-in-the-middle attacks. Without proper 
+security mechanisms, email systems cannot verify that messages genuinely originate 
+from their claimed senders, nor can they ensure that DNS queries return authentic 
+information.
+
+
+PURPOSE
+-------
+
+This laboratory exercise aims to provide hands-on experience with both the 
+offensive and defensive aspects of email and DNS security. By emulating a small 
+ISP/domain network environment, we will:
+
+1. Understand how basic email delivery works using SMTP and DNS MX records
+2. Exploit inherent vulnerabilities through DNS spoofing and email forgery attacks
+3. Implement modern security standards to mitigate these threats
+4. Analyze the effectiveness of each security mechanism
+
+
+OBJECTIVES
+----------
+
+The specific objectives of this laboratory are:
+
+1. Build and configure a network topology consisting of:
+   - A DNS server (BIND9) with A and MX record configuration
+   - A mail server (Postfix) with SMTP capabilities
+   - A client host for email testing
+   - An attacker machine for simulation of malicious activities
+
+2. Demonstrate baseline functionality:
+   - Verify DNS resolution of example.com domain
+   - Successfully send and receive email through the mail server
+   - Understand normal email delivery flow
+
+3. Exploit security vulnerabilities:
+   - Execute DNS spoofing/poisoning attacks to redirect email traffic
+   - Demonstrate email header forgery by impersonating legitimate senders
+   - Show how unauthenticated protocols accept malicious content
+
+4. Implement security hardening:
+   - Deploy DNSSEC to ensure DNS query integrity and authenticity
+   - Configure SPF (Sender Policy Framework) records for IP-based sender validation
+   - Enable DKIM (DomainKeys Identified Mail) for cryptographic message signing
+   - Establish DMARC (Domain-based Message Authentication, Reporting & Conformance) 
+     policies for comprehensive email authentication
+
+5. Validate security improvements:
+   - Test previously successful attacks against hardened configuration
+   - Analyze traffic and log differences before and after security measures
+   - Document how each protocol contributes to defense-in-depth
+
+
+APPROACH
+--------
+
+This laboratory utilizes a containerized Docker environment to create an isolated, 
+reproducible network infrastructure. The use of containers provides several 
+advantages:
+
+- Complete isolation from production systems
+- Rapid deployment and teardown for testing iterations
+- Consistent environment across different host systems
+- Ability to capture and analyze network traffic safely
+
+The experimental methodology follows a three-phase approach:
+
+Phase 1 - Baseline Establishment:
+Build the basic infrastructure and verify normal email operations without security
+mechanisms. This establishes both functional baseline and demonstrates the 
+vulnerable state of unauthenticated protocols.
+
+Phase 2 - Vulnerability Demonstration:
+Execute attacks that exploit the lack of authentication and integrity checking.
+DNS spoofing attacks will demonstrate how email can be misdirected to malicious
+servers, while header forgery will show how sender identity can be trivially
+impersonated. Success at this phase proves the necessity of security controls.
+
+Phase 3 - Security Implementation and Validation:
+Progressively implement each security mechanism (SPF, DKIM, DMARC, DNSSEC) and
+test their effectiveness. By adding protections incrementally, we can isolate the
+contribution of each technology and understand how they work together to provide
+comprehensive security.
+
+
+EXPECTED OUTCOMES
+-----------------
+
+Upon completion of this laboratory, the following outcomes are expected:
+
+1. Empirical demonstration that DNS spoofing attacks can successfully redirect
+   email traffic in the absence of DNSSEC
+
+2. Proof that email header forgery succeeds when SPF, DKIM, and DMARC are not
+   deployed
+
+3. Evidence that properly configured security mechanisms prevent or detect these
+   attacks
+
+4. Comparative analysis of network traffic and server logs showing the behavioral
+   differences between secure and insecure configurations
+
+5. Understanding of how each security protocol addresses specific attack vectors
+   and why layered security (defense-in-depth) is necessary
+
+
+SIGNIFICANCE
+------------
+
+This laboratory provides practical insight into real-world email security challenges.
+The attacks demonstrated are not theoretical—they represent techniques actively used
+by adversaries in phishing campaigns, business email compromise, and advanced 
+persistent threats. Understanding both how these attacks work and how to defend 
+against them is essential knowledge for system administrators, security engineers,
+and anyone responsible for protecting organizational communication infrastructure.
+
+By the conclusion of this exercise, we will have constructed a secure email 
+infrastructure that incorporates industry best practices for authentication, 
+integrity, and non-repudiation—transforming a vulnerable baseline system into one
+that can resist common attack vectors and provide trustworthy email services.
+
+
+================================================================================

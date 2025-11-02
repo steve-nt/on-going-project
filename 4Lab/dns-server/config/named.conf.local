@@ -1,0 +1,11 @@
+zone "example.com" {
+    type master;
+    file "/var/lib/bind/db.example.com";
+    allow-update { none; };
+};
+
+zone "0.20.172.in-addr.arpa" {
+    type master;
+    file "/var/lib/bind/db.172.20.0";
+    allow-update { none; };
+};
