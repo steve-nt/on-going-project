@@ -1,0 +1,31 @@
+Lab 4: Secure E-Mail and DNS
+Due Monday by 12:59am Points 0 Submitting a file upload
+Aim:
+Emulate a small ISP/domain network with mail and DNS servers.
+Demonstrate basic e-mail delivery using SMTP and DNS MX records.
+Explore vulnerabilities such as DNS spoofing/poisoning and unauthenticated e-mail headers.
+Apply DNSSEC and e-mail authentication mechanisms (SPF/DKIM/DMARC) to harden the setup.
+Analyze how these protocols protect against phishing, spoofing, and message tampering.
+ 
+
+Tasks:
+
+Build a simple topology with at least: a client host, a mail server (Postfix/Exim), and a DNS server (Bind/Unbound).
+Configure the DNS server with A/MX records for the mail server.
+Verify that client can resolve example.com and send e-mail to the server.
+Simulate a DNS spoof/poison attack (e.g., intercept/forge a DNS response so mail is delivered to a fake server).
+Show that the client accepts a spoofed MX record or an e-mail with a forged From:
+Enable DNSSEC on the DNS server and configure client validation.
+Add an SPF record to the DNS zone and test sender IP validation.
+Configure DKIM signing on the mail server and verify signatures with the client.
+Optionally set up a DMARC policy and test how failed messages are handled.
+Compare traffic and logs before and after enabling protections.
+Document how spoofing attacks succeed in the insecure setup and fail once DNSSEC/SPF/DKIM/DMARC are active.
+ 
+
+Deliverable:
+
+Source code of your implementations
+A report describing how you carried out the tasks and the results gained
+
+
