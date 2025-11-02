@@ -1,0 +1,101 @@
+
+[2Kdns-server  | 02-Nov-2025 16:21:35.438 automatic empty zone: 114.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.438 automatic empty zone: 115.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.438 automatic empty zone: 116.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.438 automatic empty zone: 117.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 118.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 119.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 120.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 121.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 122.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 123.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 124.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 125.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 126.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 127.100.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 0.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 127.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 254.169.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 2.0.192.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 100.51.198.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 113.0.203.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 255.255.255.255.IN-ADDR.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.IP6.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.IP6.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: D.F.IP6.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 8.E.F.IP6.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 9.E.F.IP6.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: A.E.F.IP6.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: B.E.F.IP6.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: 8.B.D.0.1.0.0.2.IP6.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: EMPTY.AS112.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: HOME.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.442 automatic empty zone: RESOLVER.ARPA
+[2Kdns-server  | 02-Nov-2025 16:21:35.450 configuring command channel from '/etc/bind/rndc.key'
+[2Kdns-server  | 02-Nov-2025 16:21:35.450 configuring command channel from '/etc/bind/rndc.key'
+[2Kdns-server  | 02-Nov-2025 16:21:35.450 not using config file logging statement for logging due to -g option
+[2Kdns-server  | 02-Nov-2025 16:21:35.450 zone example.com/IN: (primary) removed
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 reloading configuration succeeded
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 reloading zones succeeded
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:500:12::d0d#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:503:c27::2:30#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2801:1b8:10::b#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:500:2::c#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:500:1::53#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:7fe::53#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:500:a8::e#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:503:ba3e::2:30#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:500:2d::d#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:500:2f::f#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:7fd::1#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:dc3::35#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 network unreachable resolving './NS/IN': 2001:500:9f::42#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 zone 0.20.172.in-addr.arpa/IN: loading from master file /var/lib/bind/db.172.20.0 failed: file not found
+[2Kdns-server  | 02-Nov-2025 16:21:35.454 zone 0.20.172.in-addr.arpa/IN: not loaded due to errors.
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 REFUSED unexpected RCODE resolving './DNSKEY/IN': 8.8.4.4#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 SERVFAIL unexpected RCODE resolving './NS/IN': 192.112.36.4#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 REFUSED unexpected RCODE resolving './DNSKEY/IN': 8.8.8.8#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:500:12::d0d#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:503:c27::2:30#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2801:1b8:10::b#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:500:2::c#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:500:1::53#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:7fe::53#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:500:a8::e#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:503:ba3e::2:30#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:500:2d::d#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:500:2f::f#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:7fd::1#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:dc3::35#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.458 network unreachable resolving './DNSKEY/IN': 2001:500:9f::42#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.462 SERVFAIL unexpected RCODE resolving './NS/IN': 192.58.128.30#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.462 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 192.112.36.4#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.462 zone example.com/IN: sig-re-signing-interval less than 3 * refresh.
+[2Kdns-server  | 02-Nov-2025 16:21:35.462 zone example.com/IN: loaded serial 2023110205 (DNSSEC signed)
+[2Kdns-server  | 02-Nov-2025 16:21:35.466 SERVFAIL unexpected RCODE resolving './NS/IN': 170.247.170.2#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.466 all zones loaded
+[2Kdns-server  | 02-Nov-2025 16:21:35.466 running
+[2Kdns-server  | 02-Nov-2025 16:21:35.466 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 192.58.128.30#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.466 SERVFAIL unexpected RCODE resolving './NS/IN': 192.33.4.12#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.470 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 170.247.170.2#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.470 SERVFAIL unexpected RCODE resolving './NS/IN': 198.97.190.53#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.470 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 192.33.4.12#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.470 SERVFAIL unexpected RCODE resolving './NS/IN': 192.36.148.17#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.474 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 198.97.190.53#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.474 SERVFAIL unexpected RCODE resolving './NS/IN': 192.203.230.10#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.478 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 192.36.148.17#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.478 SERVFAIL unexpected RCODE resolving './NS/IN': 198.41.0.4#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.478 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 192.203.230.10#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.478 SERVFAIL unexpected RCODE resolving './NS/IN': 199.7.91.13#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.482 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 198.41.0.4#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.482 SERVFAIL unexpected RCODE resolving './NS/IN': 192.5.5.241#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.482 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 199.7.91.13#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.482 SERVFAIL unexpected RCODE resolving './NS/IN': 193.0.14.129#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.486 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 192.5.5.241#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.486 SERVFAIL unexpected RCODE resolving './NS/IN': 202.12.27.33#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.486 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 193.0.14.129#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.486 SERVFAIL unexpected RCODE resolving './NS/IN': 199.7.83.42#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.486 resolver priming query complete: failure
+[2Kdns-server  | 02-Nov-2025 16:21:35.490 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 202.12.27.33#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.494 SERVFAIL unexpected RCODE resolving './DNSKEY/IN': 199.7.83.42#53
+[2Kdns-server  | 02-Nov-2025 16:21:35.494 managed-keys-zone: Unable to fetch DNSKEY set '.': failure

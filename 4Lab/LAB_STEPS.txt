@@ -633,7 +633,7 @@ Command:
   docker exec -it dns-server bash
 
 Inside dns-server:
-  cd /etc/bind/zones
+  cd /var/lib/bind
   
   # Generate Zone Signing Key (ZSK)
   dnssec-keygen -a RSASHA256 -b 2048 -n ZONE example.com
@@ -650,9 +650,9 @@ Screenshot: Capture key generation output
 
 Step 37: Sign the Zone
 ----------------------
-Command (inside dns-server, in /etc/bind/zones):
-  dnssec-signzone -A -3 $(head -c 1000 /dev/random | sha1sum | cut -b 1-16) \
-                  -N INCREMENT -o example.com -t db.example.com
+Command (inside dns-server, cd /var/lib/bind):
+dnssec-signzone -A -3 $(head -c 1000 /dev/random | sha1sum | cut -b 1-16) \
+                     -N INCREMENT -o example.com -t db.example.com
 
 Expected Output:
   - db.example.com.signed created
@@ -660,6 +660,12 @@ Expected Output:
 
 Screenshot: Capture zone signing output
 
+     - Original zone file: db.example.com - 2.9KB
+     - Signed zone file: db.example.com.signed - 13KB (4.5x larger due to DNSSEC signatures)
+     - DNSSEC keys generated:
+       - KSK (Key-Signing Key): Kexample.com.+008+04856 (950 bytes public, 3.3KB private)
+       - ZSK (Zone-Signing Key): Kexample.com.+008+34576 (606 bytes public, 1.8KB private)
+     - Cryptographic signatures: The tail shows DNSSEC RRSIG records with base64-encoded signatures
 
 Step 38: Update BIND to Use Signed Zone
 ---------------------------------------
