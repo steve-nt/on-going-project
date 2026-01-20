@@ -1,0 +1,101 @@
+
+[2Kmail-server  | Nov  2 14:06:10 mail postfix/smtp[210]: 0D32CC41C85: to=<testuser@client.example.com>, relay=none, delay=1046, delays=1046/0.02/0/0, dsn=4.4.3, status=deferred (Host or domain name not found. Name service error for name=client.example.com type=MX: Host not found, try again)
+[2Kmail-server  | Nov  2 14:06:10 mail postfix/smtp[210]: using backwards-compatible default setting relay_domains=$mydestination to update fast-flush logfile for domain "client.example.com"
+[2Kmail-server  | Nov  2 14:11:10 mail postfix/qmgr[28]: 658BDC41C89: from=<>, size=2388, nrcpt=1 (queue active)
+[2Kmail-server  | Nov  2 14:11:10 mail postfix/smtp[217]: 658BDC41C89: to=<testuser@client.example.com>, relay=none, delay=1149, delays=1149/0.03/0/0, dsn=4.4.3, status=deferred (Host or domain name not found. Name service error for name=client.example.com type=MX: Host not found, try again)
+[2Kmail-server  | Nov  2 14:11:10 mail postfix/smtp[217]: using backwards-compatible default setting relay_domains=$mydestination to update fast-flush logfile for domain "client.example.com"
+[2Kmail-server  | Nov  2 14:26:10 mail postfix/qmgr[28]: 0D32CC41C85: from=<>, size=2388, nrcpt=1 (queue active)
+[2Kmail-server  | Nov  2 14:26:10 mail postfix/qmgr[28]: 706D3C41C7A: from=<>, size=2388, nrcpt=1 (queue active)
+[2Kmail-server  | Nov  2 14:26:10 mail postfix/smtp[222]: 0D32CC41C85: to=<testuser@client.example.com>, relay=none, delay=2246, delays=2246/0.04/0/0, dsn=4.4.3, status=deferred (Host or domain name not found. Name service error for name=client.example.com type=MX: Host not found, try again)
+[2Kmail-server  | Nov  2 14:26:10 mail postfix/smtp[222]: using backwards-compatible default setting relay_domains=$mydestination to update fast-flush logfile for domain "client.example.com"
+[2Kmail-server  | Nov  2 14:26:10 mail postfix/smtp[223]: 706D3C41C7A: to=<testuser@client.example.com>, relay=none, delay=2330, delays=2330/0.04/0/0, dsn=4.4.3, status=deferred (Host or domain name not found. Name service error for name=client.example.com type=MX: Host not found, try again)
+[2Kmail-server  | Nov  2 14:26:10 mail postfix/smtp[223]: using backwards-compatible default setting relay_domains=$mydestination to update fast-flush logfile for domain "client.example.com"
+[2Kmail-server  | Nov  2 14:31:10 mail postfix/qmgr[28]: 658BDC41C89: from=<>, size=2388, nrcpt=1 (queue active)
+[2Kmail-server  | Nov  2 14:31:10 mail postfix/smtp[229]: 658BDC41C89: to=<testuser@client.example.com>, relay=none, delay=2349, delays=2349/0.03/0/0, dsn=4.4.3, status=deferred (Host or domain name not found. Name service error for name=client.example.com type=MX: Host not found, try again)
+[2Kmail-server  | Nov  2 14:31:10 mail postfix/smtp[229]: using backwards-compatible default setting relay_domains=$mydestination to update fast-flush logfile for domain "client.example.com"
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: Postfix is running with backwards-compatible default settings
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: See http://www.postfix.org/COMPATIBILITY_README.html for details
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: To disable backwards compatibility use "postconf compatibility_level=3.6" and "postfix reload"
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/postfix-script[250]: refreshing the Postfix mail system
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/master[25]: reload -- version 3.6.4, configuration /etc/postfix
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/postsuper[253]: fatal: scan_dir_push: open directory hold: No such file or directory
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: warning: dict_nis_init: NIS domain name not set - NIS lookups disabled
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: connect from unknown[172.20.0.30]
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: fatal: host/service localhost/8891 not found: Temporary failure in name resolution
+[2Kmail-server  | Nov  2 14:45:02 mail postfix/master[25]: warning: process /usr/lib/postfix/sbin/smtpd pid 262 exit status 1
+[2Kmail-server  | Nov  2 14:45:02 mail postfix/master[25]: warning: /usr/lib/postfix/sbin/smtpd: bad command startup -- throttling
+[2Kmail-server  | === Starting Mail Server Setup ===
+[2Kmail-server  | Starting rsyslog...
+[2Kmail-server  | rsyslogd: pidfile '/run/rsyslogd.pid' and pid 12 already exist.
+[2Kmail-server  | If you want to run multiple instances of rsyslog, you need to specify
+[2Kmail-server  | different pid files for them (-i option).
+[2Kmail-server  | rsyslogd: run failed with error -3000 (see rsyslog.h or try https://www.rsyslog.com/e/3000 to learn what that number means)
+[2Kmail-server  | Starting OpenDKIM...
+[2Kmail-server  | Starting Postfix...
+[2Kmail-server  | === Mail Server Started ===
+[2Kmail-server  | Services running:
+[2Kmail-server  | opendkim      16  0.0  0.0  22284  2684 ?        Ss   14:45   0:00 /usr/sbin/opendkim -u opendkim -p inet:8891@localhost
+[2Kmail-server  | opendkim      17  0.0  0.0 129064  7120 ?        Sl   14:45   0:00 /usr/sbin/opendkim -u opendkim -p inet:8891@localhost
+[2Kmail-server  | root          23  0.5  0.0  41232  5696 ?        Ss   14:45   0:00 /usr/lib/postfix/sbin/master -c /etc/postfix
+[2Kmail-server  | postfix       25  0.0  0.0  41248  5576 ?        S    14:45   0:00 pickup -l -t unix -u -c
+[2Kmail-server  | postfix       26  0.0  0.0  41300  5540 ?        S    14:45   0:00 qmgr -l -t unix -u
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: See http://www.postfix.org/COMPATIBILITY_README.html for details
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: To disable backwards compatibility use "postconf compatibility_level=3.6" and "postfix reload"
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/postfix-script[250]: refreshing the Postfix mail system
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/master[25]: reload -- version 3.6.4, configuration /etc/postfix
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/postsuper[253]: fatal: scan_dir_push: open directory hold: No such file or directory
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: warning: dict_nis_init: NIS domain name not set - NIS lookups disabled
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: connect from unknown[172.20.0.30]
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: fatal: host/service localhost/8891 not found: Temporary failure in name resolution
+[2Kmail-server  | Nov  2 14:45:02 mail postfix/master[25]: warning: process /usr/lib/postfix/sbin/smtpd pid 262 exit status 1
+[2Kmail-server  | Nov  2 14:45:02 mail postfix/master[25]: warning: /usr/lib/postfix/sbin/smtpd: bad command startup -- throttling
+[2Kmail-server  | === Starting Mail Server Setup ===
+[2Kmail-server  | Starting rsyslog...
+[2Kmail-server  | rsyslogd: pidfile '/run/rsyslogd.pid' and pid 12 already exist.
+[2Kmail-server  | If you want to run multiple instances of rsyslog, you need to specify
+[2Kmail-server  | different pid files for them (-i option).
+[2Kmail-server  | rsyslogd: run failed with error -3000 (see rsyslog.h or try https://www.rsyslog.com/e/3000 to learn what that number means)
+[2Kmail-server  | Starting OpenDKIM...
+[2Kmail-server  | Starting Postfix...
+[2Kmail-server  | === Mail Server Started ===
+[2Kmail-server  | Services running:
+[2Kmail-server  | opendkim      16  0.0  0.0  22280  2680 ?        Ss   14:48   0:00 /usr/sbin/opendkim -u opendkim -p inet:8891@localhost
+[2Kmail-server  | opendkim      17  0.0  0.0 129060  6948 ?        Sl   14:48   0:00 /usr/sbin/opendkim -u opendkim -p inet:8891@localhost
+[2Kmail-server  | root          23  0.0  0.0  41232  5536 ?        Ss   14:48   0:00 /usr/lib/postfix/sbin/master -c /etc/postfix
+[2Kmail-server  | postfix       25  0.0  0.0  41248  5696 ?        S    14:48   0:00 pickup -l -t unix -u -c
+[2Kmail-server  | postfix       26  0.0  0.0  41300  5688 ?        S    14:48   0:00 qmgr -l -t unix -u
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: See http://www.postfix.org/COMPATIBILITY_README.html for details
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: To disable backwards compatibility use "postconf compatibility_level=3.6" and "postfix reload"
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/postfix-script[250]: refreshing the Postfix mail system
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/master[25]: reload -- version 3.6.4, configuration /etc/postfix
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/postsuper[253]: fatal: scan_dir_push: open directory hold: No such file or directory
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: warning: dict_nis_init: NIS domain name not set - NIS lookups disabled
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: connect from unknown[172.20.0.30]
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: fatal: host/service localhost/8891 not found: Temporary failure in name resolution
+[2Kmail-server  | Nov  2 14:45:02 mail postfix/master[25]: warning: process /usr/lib/postfix/sbin/smtpd pid 262 exit status 1
+[2Kmail-server  | Nov  2 14:45:02 mail postfix/master[25]: warning: /usr/lib/postfix/sbin/smtpd: bad command startup -- throttling
+[2Kmail-server  | === Starting Mail Server Setup ===
+[2Kmail-server  | Starting rsyslog...
+[2Kmail-server  | rsyslogd: pidfile '/run/rsyslogd.pid' and pid 12 already exist.
+[2Kmail-server  | If you want to run multiple instances of rsyslog, you need to specify
+[2Kmail-server  | different pid files for them (-i option).
+[2Kmail-server  | rsyslogd: run failed with error -3000 (see rsyslog.h or try https://www.rsyslog.com/e/3000 to learn what that number means)
+[2Kmail-server  | Starting OpenDKIM...
+[2Kmail-server  | Starting Postfix...
+[2Kmail-server  | === Mail Server Started ===
+[2Kmail-server  | Services running:
+[2Kmail-server  | opendkim      16  0.0  0.0  22280  2628 ?        Ss   14:49   0:00 /usr/sbin/opendkim -u opendkim -p inet:8891@localhost
+[2Kmail-server  | opendkim      17  0.0  0.0 129060  7108 ?        Sl   14:49   0:00 /usr/sbin/opendkim -u opendkim -p inet:8891@localhost
+[2Kmail-server  | root          23  0.5  0.0  41232  5588 ?        Ss   14:49   0:00 /usr/lib/postfix/sbin/master -c /etc/postfix
+[2Kmail-server  | postfix       25  0.0  0.0  41248  5760 ?        S    14:49   0:00 pickup -l -t unix -u -c
+[2Kmail-server  | postfix       26  0.0  0.0  41300  5552 ?        S    14:49   0:00 qmgr -l -t unix -u
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: See http://www.postfix.org/COMPATIBILITY_README.html for details
+[2Kmail-server  | Nov  2 14:43:23 mail postfix[239]: To disable backwards compatibility use "postconf compatibility_level=3.6" and "postfix reload"
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/postfix-script[250]: refreshing the Postfix mail system
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/master[25]: reload -- version 3.6.4, configuration /etc/postfix
+[2Kmail-server  | Nov  2 14:43:23 mail postfix/postsuper[253]: fatal: scan_dir_push: open directory hold: No such file or directory
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: warning: dict_nis_init: NIS domain name not set - NIS lookups disabled
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: connect from unknown[172.20.0.30]
+[2Kmail-server  | Nov  2 14:45:01 mail postfix/smtpd[262]: fatal: host/service localhost/8891 not found: Temporary failure in name resolution
+[2Kmail-server  | Nov  2 14:45:02 mail postfix/master[25]: warning: process /usr/lib/postfix/sbin/smtpd pid 262 exit status 1
+[2Kmail-server  | Nov  2 14:45:02 mail postfix/master[25]: warning: /usr/lib/postfix/sbin/smtpd: bad command startup -- throttling

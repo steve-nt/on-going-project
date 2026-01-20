@@ -1,0 +1,294 @@
+CONTRIBUTION GUIDE FOR RUNNING FORUM PROJECT
+==============================================
+
+As a Senior Software Developer, here's your step-by-step guide to start contributing:
+
+
+STEP 1: UNDERSTAND THE PROJECT ARCHITECTURE (Day 1)
+----------------------------------------------------
+1.1 Read all specification files in this order:
+    - forum.txt (core features: posts, comments, likes, SQLite, authentication)
+    - forum-authentication.txt (OAuth with Google/GitHub)
+    - forum-image-upload.txt (image handling: JPEG, PNG, GIF, max 20MB)
+    - forum-advanced-features.txt (notifications, activity tracking, edit/delete)
+    - forum-moderation.txt (user roles: Guest, User, Moderator, Admin)
+    - forum-security.txt (HTTPS, SSL, rate limiting, encryption)
+
+1.2 Explore the codebase structure:
+    - /cmd/app - Backend server application
+    - /cmd/client - Frontend/client application
+    - /internal/backend - Backend logic (models, handlers, repositories)
+    - /internal/frontend - Frontend logic
+    - /internal/utils - Shared utilities
+    - /static - Static assets (CSS, JS, images)
+    - forum.db - SQLite database
+    - forum_config.json - Configuration file
+
+
+STEP 2: SET UP YOUR DEVELOPMENT ENVIRONMENT (Day 1)
+----------------------------------------------------
+2.1 Verify Go installation:
+    $ go version  # Should be 1.23.0 or higher
+
+2.2 Install dependencies:
+    $ go mod download
+
+2.3 Understand the tech stack:
+    - Language: Go 1.23+
+    - Database: SQLite3
+    - Security: bcrypt (password hashing), UUID (session management)
+    - No frontend frameworks (vanilla JS/HTML/CSS only)
+    - Docker support required
+
+2.4 Set up the database:
+    - Check if forum.db exists
+    - Review database schema
+    - Check /back-up directory for database backups
+
+2.5 Run the application locally:
+    Terminal 1: $ cd cmd/app && go run .
+    Terminal 2: $ cd cmd/client && go run .
+
+
+STEP 3: UNDERSTAND THE BRANCH STRUCTURE (Day 1-2)
+--------------------------------------------------
+Current branches:
+- main (production-ready code)
+- feature/Authentication - OAuth implementation
+- feature/homepageEndpoint - Homepage API work
+- feature/models-repos - Database models and repositories
+- leon-refactor - Code refactoring
+- daniel-approach - Alternative implementation approach
+- adding_daniel_stuff_to_refactor - Integration branch
+
+3.1 Check each feature branch:
+    $ git checkout feature/Authentication
+    $ git log --oneline -10
+    $ git diff main
+
+3.2 Understand what each branch implements by reviewing commits
+
+3.3 Return to main:
+    $ git checkout main
+
+
+STEP 4: IDENTIFY CURRENT STATE & GAPS (Day 2)
+----------------------------------------------
+4.1 Review the README.md TODO list:
+    - Current TODO: Create comment endpoint (frontend ready, backend pending)
+
+4.2 Test existing functionality:
+    - User registration and login
+    - Post creation
+    - Category filtering
+    - Like/Dislike functionality
+    - Image upload (if implemented)
+    - OAuth login (Google/GitHub)
+
+4.3 Check for missing features from specs:
+    - Notifications system
+    - Activity tracking page
+    - Edit/Remove posts/comments
+    - Moderation panel
+    - HTTPS/SSL setup
+    - Rate limiting
+    - Role-based access control
+
+
+STEP 5: REVIEW CODE QUALITY & PATTERNS (Day 2)
+-----------------------------------------------
+5.1 Study the project structure:
+    - How models are defined
+    - How repositories interact with database
+    - How handlers process requests
+    - How frontend communicates with backend
+
+5.2 Check for:
+    - Error handling patterns
+    - Logging implementation (check back-up/migration files)
+    - Security practices (password encryption, session management)
+    - Database query patterns (SELECT, INSERT, CREATE)
+    - Cookie/session management
+
+5.3 Look for code smells or technical debt
+
+
+STEP 6: SET UP YOUR CONTRIBUTION WORKFLOW (Day 2-3)
+----------------------------------------------------
+6.1 Create your own feature branch:
+    $ git checkout -b feature/your-name-feature-description
+
+6.2 Configure Git properly:
+    $ git config user.name "Your Name"
+    $ git config user.email "your.email@example.com"
+
+6.3 Understand the team's workflow:
+    - Are pull requests required?
+    - What's the code review process?
+    - Are there any CI/CD pipelines?
+    - What testing is expected?
+
+
+STEP 7: START WITH QUICK WINS (Day 3)
+--------------------------------------
+7.1 Fix the current TODO:
+    - Implement the create comment endpoint (backend)
+    - Test with existing frontend handler
+
+7.2 Add unit tests:
+    - Create test files for critical functions
+    - Follow Go testing conventions (*_test.go)
+
+7.3 Improve documentation:
+    - Document API endpoints
+    - Add code comments where logic is complex
+    - Update README.md if needed
+
+
+STEP 8: PICK YOUR FIRST MAJOR CONTRIBUTION (Day 4+)
+----------------------------------------------------
+Choose based on your strengths and project priorities:
+
+Option A - Security Focus:
+    - Implement HTTPS with SSL certificates
+    - Add rate limiting
+    - Enhance encryption (database, sessions)
+
+Option B - Feature Development:
+    - Build notifications system
+    - Create activity tracking page
+    - Implement edit/delete functionality
+
+Option C - Moderation System:
+    - Implement user roles (Guest, User, Moderator, Admin)
+    - Build moderation panel
+    - Add reporting functionality
+
+Option D - Code Quality:
+    - Refactor existing code
+    - Merge pending feature branches
+    - Improve error handling
+    - Add comprehensive tests
+
+
+STEP 9: BEST PRACTICES TO FOLLOW
+---------------------------------
+9.1 Before coding:
+    - Pull latest changes: $ git pull origin main
+    - Create feature branch from main
+    - Write down what you plan to implement
+
+9.2 While coding:
+    - Commit often with clear messages
+    - Follow Go best practices and idioms
+    - Handle all errors properly
+    - Test your changes locally
+    - Don't break existing functionality
+
+9.3 Code standards:
+    - Use standard Go packages when possible
+    - Only allowed external packages: sqlite3, bcrypt, uuid
+    - No React, Angular, Vue or other frontend frameworks
+    - Respect good practices and clean code principles
+
+9.4 Security considerations:
+    - Always encrypt passwords (bcrypt)
+    - Use UUID for sessions
+    - Validate and sanitize all inputs
+    - Handle file uploads securely (check size, type)
+    - Prevent SQL injection (use parameterized queries)
+
+9.5 Before submitting:
+    - Run tests: $ go test ./...
+    - Check formatting: $ go fmt ./...
+    - Verify build: $ go build ./cmd/app
+    - Test manually in browser
+
+
+STEP 10: COMMUNICATION & COLLABORATION
+---------------------------------------
+10.1 Ask questions:
+    - Review existing issues/PRs
+    - Consult with team members about design decisions
+    - Clarify requirements before implementing
+
+10.2 Document your work:
+    - Update relevant documentation
+    - Add comments for complex logic
+    - Write clear commit messages
+    - Describe your changes in PR descriptions
+
+10.3 Code review:
+    - Request reviews from team members
+    - Be open to feedback
+    - Review others' code when possible
+
+
+QUICK REFERENCE COMMANDS
+-------------------------
+# Start development servers
+$ cd cmd/app && go run .        # Backend
+$ cd cmd/client && go run .     # Frontend
+
+# Run tests
+$ go test ./...
+
+# Format code
+$ go fmt ./...
+
+# Build
+$ go build ./cmd/app
+
+# Database backup
+$ cp forum.db back-up/forum_$(date +%Y%m%d_%H%M%S).db
+
+# Git workflow
+$ git checkout main
+$ git pull origin main
+$ git checkout -b feature/your-feature
+$ git add .
+$ git commit -m "Clear description"
+$ git push origin feature/your-feature
+
+
+RECOMMENDED LEARNING RESOURCES
+-------------------------------
+- SQLite documentation: https://www.sqlite.org/docs.html
+- Go best practices
+- HTTPS and SSL certificates (OpenSSL)
+- OAuth 2.0 flow (Google, GitHub)
+- Rate limiting techniques
+- UUID best practices
+
+
+FIRST WEEK GOALS
+-----------------
+Day 1: Environment setup, understand architecture
+Day 2: Review all branches, identify gaps
+Day 3: Complete comment endpoint, add tests
+Day 4-5: Pick and start first major feature
+Day 6-7: Submit first pull request, get feedback
+
+
+SUCCESS METRICS
+---------------
+- Code compiles without errors
+- All tests pass
+- No security vulnerabilities introduced
+- Existing functionality not broken
+- Code follows project conventions
+- Good documentation and comments
+- Successful code review
+
+
+NOTES
+-----
+- This is a learning project implementing a full-featured forum
+- Features build progressively (basic → advanced → security)
+- Docker deployment is required
+- Security is paramount (HTTPS, encryption, rate limiting)
+- Multiple user roles need to be supported
+- The project uses standard Go and minimal dependencies
+
+Good luck with your contributions! Start small, understand the codebase,
+and gradually take on larger features.
